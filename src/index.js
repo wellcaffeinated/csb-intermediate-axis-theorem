@@ -3,6 +3,7 @@ import './styles.css'
 import * as THREE from 'three'
 import { Easing, Util } from 'intween'
 import GUI from 'lil-gui'
+import store from 'store'
 
 import Stats from 'three/examples/jsm/libs/stats.module.js'
 
@@ -412,9 +413,67 @@ const cameraOrientator = (target, cameraOrContainer, duration = 1000) => {
 
 const match = (sel, cases) => (cases[sel] || cases['default'] || (() => {}))()
 
+function getPresetNames() {
+  return Array.from(store.get('presets') || [])
+}
+
+function savePreset(name, obj) {
+  if (!name) {
+    return
+  }
+  const names = getPresetNames()
+  names.push(name)
+  store.set('presets', Array.from(new Set(names)))
+  store.set(`preset:${name}`, obj)
+}
+
+function loadPreset(name) {
+  return store.get(`preset:${name}`)
+}
+
 function makeGui(onChange) {
+  let presetList = getPresetNames()
   const frameChoices = ['world', 'J', 'body']
   let pauseCtrl
+  let loadPresetCtrl
+  let currentPresetCtrl
+  const rootGui = new GUI()
+
+  const gui = rootGui.addFolder('Simulation')
+
+  const onLoadPreset = (name) => {
+    const obj = loadPreset(name)
+    if (!obj) {
+      return
+    }
+    gui.load(obj)
+    presetState.preset = name
+    currentPresetCtrl.updateDisplay()
+  }
+
+  const presetState = {
+    preset: '',
+    loadPreset: '(select)',
+    savePreset: () => {
+      const name = presetState.preset
+      if (!name || name === '(select)') {
+        return
+      }
+      savePreset(name, gui.save())
+      presetList = getPresetNames()
+      presetState.loadPreset = name
+      loadPresetCtrl = loadPresetCtrl.options(presetList).onChange(onLoadPreset)
+    },
+  }
+
+  const presets = rootGui.addFolder('Presets') //.close()
+  presets.add(presetState, 'savePreset').name('Save')
+  currentPresetCtrl = presets.add(presetState, 'preset')
+  loadPresetCtrl = presets
+    .add(presetState, 'loadPreset', presetList)
+    .name('Load Preset')
+    .onChange(onLoadPreset)
+
   const state = {
     r: 0.5,
     psi: 90,
@@ -440,7 +499,7 @@ function makeGui(onChange) {
       onChange({ object: state, property: 'paused', value: state.paused })
     },
   }
-  const gui = new GUI()
+
   gui.add(state, 'r', 0, 1, 0.01).name('mass ratio')
   gui.add(state, 'psi', 0, 180, 1)
   gui.add(state, 'chi', 0, 180, 1)
