@@ -36,13 +36,15 @@ export const Trail = ({
   const vtmp = new THREE.Vector3()
 
   const setOptions = (o) => {
-    maxSize = o.maxSize
-    maxDistance = o.maxDistance
-    throttleDistance = o.throttleDistance
+    maxSize = o.maxSize || maxSize
+    maxDistance = o.maxDistance || maxDistance
+    throttleDistance = o.throttleDistance || throttleDistance
   }
 
   const clear = () => {
     points.splice(0, points.length)
+    distances.splice(0, distances.length)
+    distance = 0
     pointsGeo.setFromPoints(points)
     line.setPoints(points)
     pointsGeo.attributes.position.needsUpdate = true
