@@ -439,6 +439,11 @@ function makeGui(onChange) {
   let currentPresetCtrl
   const rootGui = new GUI()
 
+  rootGui
+    .addFolder('Reset')
+    .close()
+    .add({ reset: () => gui.reset() }, 'reset')
+
   const gui = rootGui.addFolder('Simulation')
 
   const onLoadPreset = (name) => {
@@ -525,7 +530,7 @@ function makeGui(onChange) {
   gui.onChange(onChange)
   onChange({ object: state })
 
-  return gui
+  return rootGui
 }
 
 //
