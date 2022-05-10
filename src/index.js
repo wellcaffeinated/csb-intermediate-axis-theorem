@@ -419,7 +419,7 @@ function makeGui(onChange) {
     r: 0.5,
     psi: 90,
     chi: 90,
-    w_x: 1e-8,
+    w_x: 1e-6,
     w_y: 0,
     w_z: 0.005,
     get omega() {
@@ -445,9 +445,9 @@ function makeGui(onChange) {
   gui.add(state, 'psi', 0, 180, 1)
   gui.add(state, 'chi', 0, 180, 1)
   const omega = gui.addFolder('Angular Velocity')
-  omega.add(state, 'w_x')
-  omega.add(state, 'w_y')
-  omega.add(state, 'w_z')
+  omega.add(state, 'w_x', -0.02, 0.02, 1e-6)
+  omega.add(state, 'w_y', -0.02, 0.02, 1e-6)
+  omega.add(state, 'w_z', -0.02, 0.02, 1e-6)
 
   const trails = gui.addFolder('Trails')
   trails.add(state, 'showBodyTrails').name('body trails')
@@ -539,21 +539,6 @@ function main() {
 
   window.addEventListener('resize', onWindowResize)
 
-  const getState = () => ({
-    r: +$('#massratio').value,
-    psi: +$('#psi').value,
-    chi: +$('#chi').value,
-    omega: new Vector3(+$('#w_x').value, +$('#w_y').value, +$('#w_z').value),
-    frame: document.querySelector('[name="frame"]:checked').value,
-    showXVecs: false,
-    showAxes: $('#showaxes').checked,
-    showBg: $('#showbg').checked,
-    showPV: $('#pvtrails').checked,
-    trailsFrame: document.querySelector('[name="trailsframe"]:checked').value,
-    showBodyTrails: $('#bodytrails').checked,
-    trailLength: +$('#traillen').value,
-  })
-
   const triggersRefresh = ['r', 'psi', 'chi', 'w_x', 'w_y', 'w_z']
 
   const restart = (state) => {
@@ -561,9 +546,6 @@ function main() {
     system.setInitialPosition(state.psi, state.chi)
     system.setOmega(state.omega)
     View.spinner.setMasses(...system.getMasses())
-    $('#massratio_v').innerHTML = state.r.toFixed(2)
-    $('#psi_v').innerHTML = state.psi.toFixed(0)
-    $('#chi_v').innerHTML = state.chi.toFixed(0)
   }
 
   const update = (e) => {
@@ -618,13 +600,6 @@ function main() {
     View.jTrail.mesh.visible = View.omegaTrail.mesh.visible = state.showPV
   }
 
-  const togglePause = () => {
-    pause = !pause
-  }
-
-  $('#play').addEventListener('click', togglePause)
-  $('#controls').addEventListener('input', update, { capture: true })
-
   const gui = makeGui(update)
   gc(gui)
   animate()
@@ -632,8 +607,6 @@ function main() {
   gc({
     cleanup: () => {
       stop = true
-      $('#controls').removeEventListener('input', update)
-      $('#play').removeEventListener('click', togglePause)
       window.removeEventListener('resize', onWindowResize)
       renderer.dispose()
       controls.dispose()
