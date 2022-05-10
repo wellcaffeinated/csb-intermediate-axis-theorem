@@ -21,7 +21,8 @@ body {
 .lil-gui {
   --font-family: 'latin_modern_mono', monospace;
   --font-family-mono: 'latin_modern_mono', monospace;
-  --background-color: hsl(345deg, 6%, 13%);
+  --background-color: rgb(24, 26, 32);
+  /* --background-color: #13151d; */
   --widget-color: #474742;
   --hover-color: #5f5e55;
   --focus-color: #e71376;
