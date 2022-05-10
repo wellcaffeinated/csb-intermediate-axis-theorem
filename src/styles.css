@@ -1,0 +1,57 @@
+body {
+  font-family: sans-serif;
+  padding: 0;
+  margin: 0;
+}
+
+#controls {
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 1;
+  background: rgba(0, 0, 0, 0.8);
+  filter: blur(0.2);
+  padding: 1rem;
+  color: #fafaff;
+  font-family: monospace;
+  display: flex;
+  flex-direction: column;
+  width: 340px;
+}
+
+#controls > *:not(:last-child) {
+  margin-bottom: 1rem;
+}
+
+#controls > label {
+  display: flex;
+  flex-direction: row;
+}
+
+#controls > label > span {
+  width: 2em;
+  text-align: right;
+}
+
+#controls input {
+  flex: 1;
+  margin-left: 1rem;
+}
+
+#controls input[type='checkbox'] {
+  flex: inherit;
+  margin-left: 0;
+  margin-right: 1rem;
+  align-self: flex-start;
+}
+
+label.radio {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+label.radio input {
+  margin: 0;
+  padding: 0;
+}
