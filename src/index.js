@@ -6,6 +6,15 @@ import GUI from 'lil-gui'
 import store from 'store'
 
 import Stats from 'three/examples/jsm/libs/stats.module.js'
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
+import { SSAOPass } from 'three/examples/jsm/postprocessing/SSAOPass.js'
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
+import { SAOPass } from 'three/examples/jsm/postprocessing/SAOPass.js'
+import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js'
+import { CopyShader } from 'three/examples/jsm/shaders/CopyShader.js'
+
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js'
+import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js'
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js'
@@ -83,10 +92,10 @@ function createSpinner(texture) {
 
   const geometry = new THREE.BoxGeometry(200, 200, 4)
   const material = new THREE.MeshStandardMaterial({
-    bumpScale: 1,
-    color: grey,
-    metalness: 0.9,
-    roughness: 1,
+    // bumpScale: 1,
+    color: white,
+    metalness: 0.5,
+    roughness: 0.9,
     envMap: null,
   })
   const plate = new THREE.Mesh(geometry, material)
@@ -97,6 +106,8 @@ function createSpinner(texture) {
 
   const cyl = new THREE.CylinderGeometry(0.5, 0.5, 200, 32)
   const rod = new THREE.Mesh(cyl, material)
+  rod.castShadow = true
+  rod.receiveShadow = true
   rod.rotation.set(0, 0, 0)
   group.add(rod)
 
@@ -243,8 +254,6 @@ function init() {
 
   // Lights
 
-  View.scene.add(new THREE.AmbientLight(0xffffdd, 0.6))
-
   const light = new THREE.DirectionalLight(0xffffdd, 0.9)
   light.position.x = 100
   light.position.y = 550
@@ -257,24 +266,13 @@ function init() {
   light.shadow.camera.left = -1000
   light.shadow.camera.top = 1000
   light.shadow.camera.bottom = -1000
-  light.shadow.mapSize.width = 512 * 2
-  light.shadow.mapSize.height = 512 * 2
+  light.shadow.mapSize.width = 512 * 4
+  light.shadow.mapSize.height = 512 * 4
   light.shadow.radius = 3
-  light.shadow.samples = 2
+  // light.shadow.samples = 2
   light.shadow.bias = -0.0005
 
   View.scene.add(light)
-
-  // const directionalLight = new THREE.DirectionalLight(0xffffdd, 0.5)
-  // directionalLight.position.set(1, 1, 1).normalize()
-  // scene.add(directionalLight)
-
-  // const directionalLight2 = new THREE.DirectionalLight(0xffffdd, 0.5)
-  // directionalLight2.position.set(-0.5, 1, -1).normalize()
-  // scene.add(directionalLight2)
-
-  // const pointLight = new THREE.PointLight(0xffffdd, 0.5, 800)
-  // particleLight.add(pointLight)
 
   //
 
@@ -339,11 +337,18 @@ function init() {
   View.sky = new THREE.Mesh(skyGeo, skyMat)
   View.scene.add(View.sky)
 
+  View.scene.add(new THREE.AmbientLight(0xffffdd, 0.9))
+
+  const hemisphereLight = new THREE.HemisphereLight(light.color, 0x23a4db, 0.9)
+  View.scene.add(hemisphereLight)
+
   // axes helper
   View.axesHelper = new THREE.AxesHelper(200)
   View.layout.add(View.axesHelper)
 
-  renderer = new THREE.WebGLRenderer({ antialias: true })
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false })
+  renderer.autoClear = false
+  renderer.setClearColor(View.scene.fog.color)
   renderer.setPixelRatio(window.devicePixelRatio)
   renderer.setSize(window.innerWidth, window.innerHeight)
   container.appendChild(renderer.domElement)
@@ -355,6 +360,48 @@ function init() {
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.VSMShadowMap
   renderer.physicallyCorrectLights = true
+  // renderer.physicallyBasedShading = true
+
+  View.composer = new EffectComposer(renderer)
+  View.renderPass = new RenderPass(View.scene, View.camera)
+  View.composer.addPass(View.renderPass)
+
+  // View.saoPass = new SAOPass(View.scene, View.camera, false, true)
+  // View.saoPass.params = Object.assign(View.saoPass.params, {
+  //   saoBias: 0,
+  //   saoIntensity: 0.0004,
+  //   saoScale: 3,
+  //   saoKernelRadius: 16,
+  //   saoBlur: 1,
+  //   saoBlurRadius: 1,
+  //   saoBlurStdDev: 0.05,
+  //   saoBlurDepthCutoff: 0.05,
+  // })
+  // View.composer.addPass( View.saoPass )
+
+  const ssaoPass = new SSAOPass(
+    View.scene,
+    View.camera,
+    window.innerWidth,
+    window.innerHeight
+  )
+  ssaoPass.kernelRadius = 8
+  ssaoPass.minDistance = 0.001
+  ssaoPass.maxDistance = 0.025
+  // ssaoPass.ssaoMaterial.uniforms[ 'cameraNear' ].value = 0.01
+  ssaoPass.ssaoMaterial.uniforms['cameraFar'].value = 6000
+  View.composer.addPass(ssaoPass)
+
+  const fxaaPass = new ShaderPass(FXAAShader)
+  fxaaPass.material.uniforms['resolution'].value.x =
+    1 / (window.innerWidth * renderer.getPixelRatio())
+  fxaaPass.material.uniforms['resolution'].value.y =
+    1 / (window.innerHeight * renderer.getPixelRatio())
+  View.composer.addPass(fxaaPass)
+  // const smaaPass = new SMAAPass( window.innerWidth * renderer.getPixelRatio(), window.innerHeight * renderer.getPixelRatio() )
+  // View.composer.addPass(smaaPass)
+  const copyPass = new ShaderPass(CopyShader)
+  View.composer.addPass(copyPass)
 
   //
 
@@ -371,10 +418,13 @@ function init() {
 }
 
 function onWindowResize() {
-  View.camera.aspect = window.innerWidth / window.innerHeight
+  const width = window.innerWidth
+  const height = window.innerHeight
+  View.camera.aspect = width / height
   View.camera.updateProjectionMatrix()
 
-  renderer.setSize(window.innerWidth, window.innerHeight)
+  renderer.setSize(width, height)
+  View.composer.setSize(width, height)
 }
 
 const n = new THREE.Vector3()
@@ -598,7 +648,8 @@ function main() {
     }
     // controls.update()
     // View.camera.lookAt(View.scene.position)
-    renderer.render(View.scene, View.camera)
+    // renderer.render(View.scene, View.camera)
+    View.composer.render()
   }
 
   window.addEventListener('resize', onWindowResize)
@@ -674,6 +725,7 @@ function main() {
       window.removeEventListener('resize', onWindowResize)
       renderer.dispose()
       controls.dispose()
+      View.composer.dispose()
       View.scene.dispose()
     },
   })
