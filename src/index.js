@@ -392,12 +392,12 @@ function init() {
   ssaoPass.ssaoMaterial.uniforms['cameraFar'].value = 6000
   View.composer.addPass(ssaoPass)
 
-  const fxaaPass = new ShaderPass(FXAAShader)
-  fxaaPass.material.uniforms['resolution'].value.x =
+  View.fxaaPass = new ShaderPass(FXAAShader)
+  View.fxaaPass.material.uniforms['resolution'].value.x =
     1 / (window.innerWidth * renderer.getPixelRatio())
-  fxaaPass.material.uniforms['resolution'].value.y =
+  View.fxaaPass.material.uniforms['resolution'].value.y =
     1 / (window.innerHeight * renderer.getPixelRatio())
-  View.composer.addPass(fxaaPass)
+  View.composer.addPass(View.fxaaPass)
   // const smaaPass = new SMAAPass( window.innerWidth * renderer.getPixelRatio(), window.innerHeight * renderer.getPixelRatio() )
   // View.composer.addPass(smaaPass)
   const copyPass = new ShaderPass(CopyShader)
@@ -422,6 +422,11 @@ function onWindowResize() {
   const height = window.innerHeight
   View.camera.aspect = width / height
   View.camera.updateProjectionMatrix()
+
+  View.fxaaPass.material.uniforms['resolution'].value.x =
+    1 / (width * renderer.getPixelRatio())
+  View.fxaaPass.material.uniforms['resolution'].value.y =
+    1 / (height * renderer.getPixelRatio())
 
   renderer.setSize(width, height)
   View.composer.setSize(width, height)
