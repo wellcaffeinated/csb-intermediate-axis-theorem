@@ -385,6 +385,7 @@ function init() {
     window.innerWidth,
     window.innerHeight
   )
+  ssaoPass.kernelSize = 4
   ssaoPass.kernelRadius = 8
   ssaoPass.minDistance = 0.001
   ssaoPass.maxDistance = 0.025
