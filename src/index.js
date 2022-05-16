@@ -560,6 +560,11 @@ function makeGui(onChange) {
     },
   }
 
+  const cameraFolder = gui.addFolder('Camera').close()
+  cameraFolder.add(View.camera.position, 'x')
+  cameraFolder.add(View.camera.position, 'y')
+  cameraFolder.add(View.camera.position, 'z')
+
   gui.add(state, 'r', 0, 1, 0.01).name('mass ratio')
   gui.add(state, 'psi', 0, 180, 1)
   gui.add(state, 'chi', 0, 180, 1)
@@ -651,7 +656,7 @@ function main() {
     if (!pause) {
       updateTrails()
     }
-    // controls.update()
+    controls.update()
     // View.camera.lookAt(View.scene.position)
     // renderer.render(View.scene, View.camera)
     View.composer.render()
