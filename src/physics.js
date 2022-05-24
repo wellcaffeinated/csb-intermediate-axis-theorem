@@ -23,6 +23,7 @@ export const createSystem = (options) => {
   const v2 = new THREE.Vector3()
   const qRot = new THREE.Quaternion()
   const jRot = new THREE.Quaternion()
+  const jWorld = new THREE.Quaternion()
   let omega_0 = 0
 
   // acceleration of first object
@@ -43,6 +44,7 @@ export const createSystem = (options) => {
     tmpV.crossVectors(x2, v2).multiplyScalar(m2)
     angularMomentum.add(tmpV)
     jRot.setFromUnitVectors(UP, tmpV.copy(angularMomentum).normalize())
+    jWorld.copy(jRot)
   }
 
   const omega = new THREE.Vector3()
@@ -255,6 +257,7 @@ export const createSystem = (options) => {
     angularMomentum,
     omega,
     jRot,
+    jWorld,
     x1,
     x2,
   }

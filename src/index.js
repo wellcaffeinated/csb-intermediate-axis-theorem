@@ -391,7 +391,7 @@ function init() {
   ssaoPass.maxDistance = 0.025
   // ssaoPass.ssaoMaterial.uniforms[ 'cameraNear' ].value = 0.01
   ssaoPass.ssaoMaterial.uniforms['cameraFar'].value = 6000
-  View.composer.addPass(ssaoPass)
+  // View.composer.addPass(ssaoPass)
 
   View.fxaaPass = new ShaderPass(FXAAShader)
   View.fxaaPass.material.uniforms['resolution'].value.x =
@@ -489,7 +489,7 @@ function loadPreset(name) {
 
 function makeGui(onChange) {
   let presetList = getPresetNames()
-  const frameChoices = ['world', 'J', 'body']
+  const frameChoices = ['world', 'J', 'J up', 'body']
   let pauseCtrl
   let loadPresetCtrl
   let currentPresetCtrl
@@ -632,6 +632,7 @@ function main() {
     trails.forEach((t) => t.clear())
   }
 
+  let rotateJ
   let prevT = performance.now()
   let orientCamera = cameraOrientator(View.scene, View.cameraContainer)
   function render() {
@@ -651,7 +652,7 @@ function main() {
     setArrow(View.x1Arrow, system.x1)
     setArrow(View.x2Arrow, system.x2)
 
-    View.Jframe.quaternion.copy(system.jRot)
+    View.Jframe.quaternion.copy(rotateJ ? system.jRot : system.jWorld)
 
     orientCamera(time)
     if (!pause) {
@@ -695,6 +696,10 @@ function main() {
         trailsTarget = View.scene
         trailsFrame = View.layout
       },
+      'J up': () => {
+        trailsTarget = View.scene
+        trailsFrame = View.layout
+      },
       J: () => {
         trailsTarget = View.Jframe
         trailsFrame = trailsTarget
@@ -713,9 +718,12 @@ function main() {
     const prevFrame = cameraTarget
     cameraTarget = match(state.frame, {
       world: () => View.scene,
+      'J up': () => View.Jframe,
       J: () => View.Jframe,
       body: () => View.spinner.group,
     })
+
+    rotateJ = state.frame !== 'J up'
 
     if (prevFrame !== cameraTarget) {
       orientCamera = cameraOrientator(cameraTarget, View.cameraContainer)
