@@ -66,6 +66,9 @@ function createMass(
     metalness,
     roughness,
     envMap: null,
+    // side: THREE.FrontSide,
+    // shadowSide: THREE.FrontSide,
+    dithering: true,
   })
 
   const mesh = new THREE.Mesh(geometry, material)
@@ -97,6 +100,9 @@ function createSpinner(texture) {
     metalness: 0.5,
     roughness: 0.9,
     envMap: null,
+    // side: THREE.FrontSide,
+    // shadowSide: THREE.FrontSide,
+    dithering: true,
   })
   const plate = new THREE.Mesh(geometry, material)
   plate.castShadow = true
@@ -266,11 +272,12 @@ function init() {
   light.shadow.camera.left = -1000
   light.shadow.camera.top = 1000
   light.shadow.camera.bottom = -1000
-  light.shadow.mapSize.width = 512 * 4
-  light.shadow.mapSize.height = 512 * 4
-  light.shadow.radius = 3
-  // light.shadow.samples = 2
-  light.shadow.bias = -0.0005
+  light.shadow.mapSize.width = 512 * 16
+  light.shadow.mapSize.height = 512 * 16
+  light.shadow.radius = 1
+  light.shadow.normalBias = 0
+  // light.shadow.samples = 10
+  light.shadow.bias = 0.0006
 
   View.scene.add(light)
 
@@ -359,6 +366,7 @@ function init() {
   renderer.toneMappingExposure = 0.7
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.VSMShadowMap
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap
   renderer.physicallyCorrectLights = true
   // renderer.physicallyBasedShading = true
 
@@ -416,6 +424,8 @@ function init() {
   controls.rotateSpeed = 1.0
   controls.zoomSpeed = 1.2
   controls.panSpeed = 0.8
+  controls.enableDamping = true
+  controls.dampingFactor = 0.2
 }
 
 function onWindowResize() {
