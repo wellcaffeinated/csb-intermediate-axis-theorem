@@ -22,9 +22,10 @@ export const createSystem = (options) => {
   const v1 = new THREE.Vector3()
   const v2 = new THREE.Vector3()
   const qRot = new THREE.Quaternion()
+  const omegaRot = new THREE.Quaternion()
   const jRot = new THREE.Quaternion()
   const jWorld = new THREE.Quaternion()
-  let omega_0 = 0
+  const omega_0v = new THREE.Vector3()
 
   // acceleration of first object
   const accTmpV = new THREE.Vector3()
@@ -66,12 +67,15 @@ export const createSystem = (options) => {
     updateAngMom()
   }
 
+  let omegaJ = 0
   const setOmega = (omega) => {
     v1.crossVectors(omega, x1)
     v2.crossVectors(omega, x2)
     updateOmega()
     updateAngMom()
-    omega_0 = angularMomentum.dot(omega) / angularMomentum.length()
+    omega_0v.copy(omega)
+    omegaRot.setFromUnitVectors(UP, tmpV.copy(omega).normalize())
+    omegaJ = angularMomentum.dot(omega_0v) / angularMomentum.length()
   }
 
   const setInitialPosition = (psi, chi) => {
@@ -236,11 +240,14 @@ export const createSystem = (options) => {
     updateRot()
     updateOmega()
     updateAngMom()
-    qtmp.setFromAxisAngle(
-      tmpV.copy(angularMomentum).normalize(),
-      omega_0 * time
-    )
+    qtmp.setFromAxisAngle(tmpV.copy(angularMomentum).normalize(), omegaJ * time)
     jRot.premultiply(qtmp)
+
+    qtmp.setFromAxisAngle(
+      tmpV.copy(omega_0v).normalize(),
+      omega_0v.length() * dt
+    )
+    omegaRot.premultiply(qtmp)
   }
 
   const getMasses = () => {
@@ -258,7 +265,11 @@ export const createSystem = (options) => {
     omega,
     jRot,
     jWorld,
+    omegaRot,
     x1,
     x2,
+    zeroTime: () => {
+      time = 0
+    },
   }
 }

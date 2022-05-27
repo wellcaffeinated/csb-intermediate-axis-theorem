@@ -165,6 +165,9 @@ function init() {
   View.Jframe = new THREE.Object3D()
   View.layout.add(View.Jframe)
 
+  View.omegaFrame = new THREE.Object3D()
+  View.layout.add(View.omegaFrame)
+
   // camera
   View.camera = new THREE.PerspectiveCamera(
     40,
@@ -499,7 +502,7 @@ function loadPreset(name) {
 
 function makeGui(onChange) {
   let presetList = getPresetNames()
-  const frameChoices = ['world', 'J', 'J up', 'body']
+  const frameChoices = ['world', 'J', 'J up', 'body', 'omega_0']
   let pauseCtrl
   let loadPresetCtrl
   let currentPresetCtrl
@@ -663,6 +666,7 @@ function main() {
     setArrow(View.x2Arrow, system.x2)
 
     View.Jframe.quaternion.copy(rotateJ ? system.jRot : system.jWorld)
+    View.omegaFrame.quaternion.copy(system.omegaRot)
 
     orientCamera(time)
     if (!pause) {
@@ -683,6 +687,7 @@ function main() {
     system.setInitialPosition(state.psi, state.chi)
     system.setOmega(state.omega)
     View.spinner.setMasses(...system.getMasses())
+    system.zeroTime()
   }
 
   const update = (e) => {
@@ -714,6 +719,10 @@ function main() {
         trailsTarget = View.Jframe
         trailsFrame = trailsTarget
       },
+      omega_0: () => {
+        trailsTarget = View.omegaFrame
+        trailsFrame = trailsTarget
+      },
       body: () => {
         trailsTarget = View.spinner.group
         trailsFrame = trailsTarget
@@ -730,6 +739,7 @@ function main() {
       world: () => View.scene,
       'J up': () => View.Jframe,
       J: () => View.Jframe,
+      omega_0: () => View.omegaFrame,
       body: () => View.spinner.group,
     })
 
