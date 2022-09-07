@@ -549,15 +549,17 @@ function makeGui(onChange) {
     .onChange(onLoadPreset)
 
   const state = {
-    r: 0.5,
     psi: 90,
     chi: 90,
+    r: 0.5,
     w_x: 1e-6,
     w_y: 0,
     w_z: 0.005,
     get omega() {
       return new Vector3(state.w_x, state.w_y, state.w_z)
     },
+    L: 0.013,
+    energy_scale: 1,
     frame: frameChoices[0],
     showXVecs: false,
     showAxes: true,
@@ -572,6 +574,24 @@ function makeGui(onChange) {
       pauseCtrl.name(state.paused ? 'Play' : 'Pause')
       onChange({ object: state, property: 'paused', value: state.paused })
     },
+    angularMomentum: 0, // view only
+  }
+
+  const setOmegaFromEnergy = () => {
+    const M = 4
+    const m1 = M / (state.r + 1)
+    const m2 = state.r * m1
+    const c = Math.sqrt(1 + state.r)
+    const Ttil = state.energy_scale
+    const L = state.L
+    const I1 = M / c / c
+    const lambda = (0.5 * L * L) / I1
+    const h = (2 * lambda) / I1 / (c * c - 1)
+    const w1sq = h * (c * c * Ttil - 1)
+    const w3sq = (h / c / c) * (1 - Ttil)
+    state.w_x = Math.sqrt(w1sq)
+    state.w_y = Math.sqrt(w3sq)
+    state.w_z = 0
   }
 
   const cameraFolder = gui.addFolder('Camera').close()
@@ -579,13 +599,25 @@ function makeGui(onChange) {
   cameraFolder.add(View.camera.position, 'y')
   cameraFolder.add(View.camera.position, 'z')
 
-  gui.add(state, 'r', 0, 1, 0.01).name('mass ratio')
   gui.add(state, 'psi', 0, 180, 1)
   gui.add(state, 'chi', 0, 180, 1)
+  gui.add(state, 'L', 0, 0.03, 0.001).name('L')
+  const escalectrl = gui
+    .add(state, 'energy_scale', 0, 1, 0.01)
+    .name('energy amount')
+
+  const setMinEscale = () => {
+    const c = Math.sqrt(1 + state.r)
+    const Ttilmin = 1 / c / c
+    escalectrl.min(Ttilmin)
+    escalectrl.setValue(Math.max(state.energy_scale, Ttilmin))
+  }
+  setMinEscale()
+  gui.add(state, 'r', 0, 1, 0.01).name('mass ratio').onChange(setMinEscale)
   const omega = gui.addFolder('Angular Velocity')
-  omega.add(state, 'w_x', -0.02, 0.02, 1e-6)
-  omega.add(state, 'w_y', -0.02, 0.02, 1e-6)
-  omega.add(state, 'w_z', -0.02, 0.02, 1e-6)
+  omega.add(state, 'w_x', -0.02, 0.02, 1e-6).listen()
+  omega.add(state, 'w_y', -0.02, 0.02, 1e-6).listen()
+  omega.add(state, 'w_z', -0.02, 0.02, 1e-6).listen()
 
   const trails = gui.addFolder('Trails')
   trails.add(state, 'showBodyTrails').name('body trails')
@@ -601,10 +633,22 @@ function makeGui(onChange) {
 
   pauseCtrl = gui.add(state, 'togglePause').name('Play')
 
-  gui.onChange(onChange)
+  gui.onChange((e) => {
+    if (e.property === 'L' || e.property === 'energy_scale') {
+      setOmegaFromEnergy()
+    }
+    onChange(e)
+  })
   onChange({ object: state })
 
-  return rootGui
+  const metrics = rootGui.addFolder('Metrics')
+  metrics.add(state, 'angularMomentum').disable().listen()
+
+  return {
+    rootGui,
+    gui,
+    state,
+  }
 }
 
 //
@@ -680,7 +724,16 @@ function main() {
 
   window.addEventListener('resize', onWindowResize)
 
-  const triggersRefresh = ['r', 'psi', 'chi', 'w_x', 'w_y', 'w_z']
+  const triggersRefresh = [
+    'r',
+    'psi',
+    'chi',
+    'w_x',
+    'w_y',
+    'w_z',
+    'energy_scale',
+    'L',
+  ]
 
   const restart = (state) => {
     system.setMassRatio(state.r)
@@ -752,10 +805,12 @@ function main() {
       state.showXVecs
     View.x1Trail.mesh.visible = View.x2Trail.mesh.visible = state.showBodyTrails
     View.jTrail.mesh.visible = View.omegaTrail.mesh.visible = state.showPV
+
+    state.angularMomentum = system.angularMomentum.length()
   }
 
-  const gui = makeGui(update)
-  gc(gui)
+  const { rootGui } = makeGui(update)
+  gc(rootGui)
   animate()
 
   gc({
