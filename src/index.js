@@ -582,16 +582,17 @@ function makeGui(onChange) {
     const m1 = M / (state.r + 1)
     const m2 = state.r * m1
     const c = Math.sqrt(1 + state.r)
-    const Ttil = state.energy_scale
+    // const Ttil = state.energy_scale //
+    const Ttil = THREE.MathUtils.lerp(1 / c / c, 1, state.energy_scale)
     const L = state.L
     const I1 = M / c / c
     const lambda = (0.5 * L * L) / I1
     const h = (2 * lambda) / I1 / (c * c - 1)
     const w1sq = h * (c * c * Ttil - 1)
     const w3sq = (h / c / c) * (1 - Ttil)
-    state.w_x = Math.sqrt(w1sq)
+    state.w_z = Math.sqrt(w1sq)
     state.w_y = Math.sqrt(w3sq)
-    state.w_z = 0
+    state.w_x = 0
   }
 
   const cameraFolder = gui.addFolder('Camera').close()
@@ -603,14 +604,15 @@ function makeGui(onChange) {
   gui.add(state, 'chi', 0, 180, 1)
   gui.add(state, 'L', 0, 0.03, 0.001).name('L')
   const escalectrl = gui
-    .add(state, 'energy_scale', 0, 1, 0.01)
+    .add(state, 'energy_scale', 0, 1, 0.001)
     .name('energy amount')
 
   const setMinEscale = () => {
-    const c = Math.sqrt(1 + state.r)
-    const Ttilmin = 1 / c / c
-    escalectrl.min(Ttilmin)
-    escalectrl.setValue(Math.max(state.energy_scale, Ttilmin))
+    // const c = Math.sqrt(1 + state.r)
+    // const Ttilmin = 1 / c / c
+    // escalectrl.min(Ttilmin)
+    // escalectrl.setValue(Math.max(state.energy_scale, Ttilmin))
+    setOmegaFromEnergy()
   }
   setMinEscale()
   gui.add(state, 'r', 0, 1, 0.01).name('mass ratio').onChange(setMinEscale)
