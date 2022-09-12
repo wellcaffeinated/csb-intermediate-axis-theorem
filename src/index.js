@@ -548,15 +548,22 @@ function makeGui(onChange) {
     .name('Load Preset')
     .onChange(onLoadPreset)
 
+  const Xaxis = new Vector3(1, 0, 0)
+  const Yaxis = new Vector3(0, 1, 0)
+  const deg = Math.PI / 180
+
   const state = {
     psi: 90,
-    chi: 90,
+    chi: 0,
     r: 0.5,
     w_x: 1e-6,
     w_y: 0,
     w_z: 0.005,
     get omega() {
-      return new Vector3(state.w_x, state.w_y, state.w_z)
+      const omega = new Vector3(state.w_x, state.w_y, state.w_z)
+      omega.applyAxisAngle(Xaxis, state.chi * deg)
+      omega.applyAxisAngle(Yaxis, (state.psi - 90) * deg)
+      return omega
     },
     L: 0.013,
     energy_scale: 1,
@@ -581,18 +588,20 @@ function makeGui(onChange) {
     const M = 4
     const m1 = M / (state.r + 1)
     const m2 = state.r * m1
-    const c = Math.sqrt(1 + state.r)
+    const csq = 1 + state.r
     // const Ttil = state.energy_scale //
-    const Ttil = THREE.MathUtils.lerp(1 / c / c, 1, state.energy_scale)
+    const Ttilmin = 1 / csq
+    const Ttil = THREE.MathUtils.lerp(Ttilmin, 1, state.energy_scale)
     const L = state.L
-    const I1 = M / c / c
+    const I1 = M / csq
     const lambda = (0.5 * L * L) / I1
-    const h = (2 * lambda) / I1 / (c * c - 1)
-    const w1sq = h * (c * c * Ttil - 1)
-    const w3sq = (h / c / c) * (1 - Ttil)
-    state.w_z = Math.sqrt(w1sq)
-    state.w_y = Math.sqrt(w3sq)
-    state.w_x = 0
+    const h = (2 * lambda) / I1 / (csq - 1)
+    const w1sq = h * csq * (Ttil - Ttilmin)
+    const w3sq = (h / csq) * (1 - Ttil)
+    const fudge = m1 / m2
+    state.w_x = Math.sqrt(w1sq) * fudge
+    state.w_y = 0
+    state.w_z = Math.sqrt(w3sq)
   }
 
   const cameraFolder = gui.addFolder('Camera').close()
@@ -607,6 +616,17 @@ function makeGui(onChange) {
     .add(state, 'energy_scale', 0, 1, 0.001)
     .name('energy amount')
 
+  gui
+    .add(
+      {
+        fn() {
+          escalectrl.setValue(state.r * state.r)
+        },
+      },
+      'fn'
+    )
+    .name('Set to instability')
+
   const setMinEscale = () => {
     // const c = Math.sqrt(1 + state.r)
     // const Ttilmin = 1 / c / c
@@ -615,7 +635,7 @@ function makeGui(onChange) {
     setOmegaFromEnergy()
   }
   setMinEscale()
-  gui.add(state, 'r', 0, 1, 0.01).name('mass ratio').onChange(setMinEscale)
+  gui.add(state, 'r', 0.01, 1, 0.01).name('mass ratio').onChange(setMinEscale)
   const omega = gui.addFolder('Angular Velocity')
   omega.add(state, 'w_x', -0.02, 0.02, 1e-6).listen()
   omega.add(state, 'w_y', -0.02, 0.02, 1e-6).listen()
