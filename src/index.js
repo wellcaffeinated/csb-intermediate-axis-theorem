@@ -588,18 +588,17 @@ function makeGui(onChange) {
     const M = 4
     const m1 = M / (state.r + 1)
     const m2 = state.r * m1
-    const csq = 1 + state.r
+    const csq = 1 + 1 / state.r
     // const Ttil = state.energy_scale //
     const Ttilmin = 1 / csq
     const Ttil = THREE.MathUtils.lerp(Ttilmin, 1, state.energy_scale)
     const L = state.L
     const I1 = M / csq
     const lambda = (0.5 * L * L) / I1
-    const h = (2 * lambda) / I1 / (csq - 1)
+    const h = (2 * state.r * lambda) / I1
     const w1sq = h * csq * (Ttil - Ttilmin)
     const w3sq = (h / csq) * (1 - Ttil)
-    const fudge = m1 / m2
-    state.w_x = Math.sqrt(w1sq) * fudge
+    state.w_x = Math.sqrt(w1sq)
     state.w_y = 0
     state.w_z = Math.sqrt(w3sq)
   }
