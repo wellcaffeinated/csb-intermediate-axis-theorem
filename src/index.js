@@ -28,6 +28,8 @@ import { $GC, $, $$ } from './slick-csb'
 
 const gc = $GC(module)
 
+const ARROW_LENGTH = 180
+
 let container, stats, controls
 
 let renderer
@@ -191,14 +193,14 @@ function init() {
   View.angMomArrow = new THREE.ArrowHelper(
     new THREE.Vector3(),
     View.layout.position,
-    180,
+    ARROW_LENGTH,
     pink
   )
   View.layout.add(View.angMomArrow)
   View.omegaArrow = new THREE.ArrowHelper(
     new THREE.Vector3(),
     View.layout.position,
-    180,
+    ARROW_LENGTH,
     mustard
   )
   View.layout.add(View.omegaArrow)
@@ -447,13 +449,22 @@ function onWindowResize() {
 }
 
 const n = new THREE.Vector3()
-const setArrow = (view, v) => {
+const setArrow = (obj, v, setLength = false, scale = 1) => {
   n.copy(v)
   if (n.lengthSq() !== 0) {
-    view.setDirection(n.normalize())
-    view.visible = true
+    if (setLength) {
+      obj.setLength(
+        scale * n.length() * ARROW_LENGTH,
+        0.2 * ARROW_LENGTH,
+        0.04 * ARROW_LENGTH
+      )
+    } else {
+      obj.setLength(ARROW_LENGTH)
+    }
+    obj.setDirection(n.normalize())
+    obj.visible = true
   } else {
-    view.visible = false
+    obj.visible = false
   }
 }
 
@@ -575,6 +586,9 @@ function makeGui(onChange) {
     trailsFrame: 'match',
     showBodyTrails: true,
     trailLength: 10,
+    showOmega: true,
+    showJ: true,
+    normalizedArrows: true,
     paused: true,
     togglePause: () => {
       state.paused = !state.paused
@@ -652,6 +666,11 @@ function makeGui(onChange) {
   gui.add(state, 'showBg').name('environment')
   gui.add(state, 'frame', frameChoices)
 
+  const arrows = gui.addFolder('Arrows')
+  arrows.add(state, 'showOmega').name('Show angular velocity')
+  arrows.add(state, 'showJ').name('Show angular momentum')
+  arrows.add(state, 'normalizedArrows').name('Normalize lengths')
+
   pauseCtrl = gui.add(state, 'togglePause').name('Play')
 
   gui.onChange((e) => {
@@ -710,6 +729,9 @@ function main() {
     trails.forEach((t) => t.clear())
   }
 
+  let normalizedArrows = true
+  let showOmega = true
+  let showJ = true
   let rotateJ
   let prevT = performance.now()
   let orientCamera = cameraOrientator(View.scene, View.cameraContainer)
@@ -726,7 +748,14 @@ function main() {
     View.spinner.setOrientation(system.qRot)
 
     setArrow(View.angMomArrow, system.angularMomentum)
-    setArrow(View.omegaArrow, system.omega)
+    setArrow(
+      View.omegaArrow,
+      system.omega,
+      !normalizedArrows,
+      1 / system.angularMomentum.length()
+    )
+    View.angMomArrow.visible = showJ && View.angMomArrow.visible
+    View.omegaArrow.visible = showOmega && View.omegaArrow.visible
     setArrow(View.x1Arrow, system.x1)
     setArrow(View.x2Arrow, system.x2)
 
@@ -774,6 +803,9 @@ function main() {
       pause = e.value
       return
     }
+    normalizedArrows = state.normalizedArrows
+    showOmega = state.showOmega
+    showJ = state.showJ
     View.axesHelper.visible = state.showAxes
     View.ground.visible = View.sky.visible = state.showBg
 
