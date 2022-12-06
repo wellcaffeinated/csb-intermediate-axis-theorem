@@ -701,6 +701,8 @@ function main() {
   let cameraTarget = View.scene
   let trailsTarget = View.scene
   let trailsFrame = View.layout
+  let normalizedArrows = true
+
   const system = createSystem()
 
   function animate() {
@@ -722,14 +724,20 @@ function main() {
       tmpV.copy(system.angularMomentum).normalize(),
       trailsTarget
     )
-    View.omegaTrail.update(tmpV.copy(system.omega).normalize(), trailsTarget)
+
+    tmpV.copy(system.omega)
+    if (normalizedArrows) {
+      tmpV.normalize()
+    } else {
+      tmpV.multiplyScalar(1 / system.angularMomentum.length())
+    }
+    View.omegaTrail.update(tmpV, trailsTarget)
   }
 
   const clearTrails = () => {
     trails.forEach((t) => t.clear())
   }
 
-  let normalizedArrows = true
   let showOmega = true
   let showJ = true
   let rotateJ
