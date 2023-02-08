@@ -5,6 +5,7 @@ import { Easing, Util } from 'intween'
 import GUI from 'lil-gui'
 import store from 'store'
 import { createPendulumView } from './pendulum'
+import { createEllipsoidView } from './ellipsoid'
 
 import Stats from 'three/examples/jsm/libs/stats.module.js'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
@@ -24,6 +25,7 @@ import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js'
 import { createSystem } from './physics'
 import { Vector2, Vector3 } from 'three'
 import { Trail } from './trails'
+import { white, red, blue, grey, pink, mustard } from './colors'
 
 import { $GC, $, $$ } from './slick-csb'
 
@@ -35,22 +37,6 @@ let container, stats, controls
 
 let renderer
 const View = {}
-
-const HSL = (h, s, l) => {
-  return new THREE.Color().setHSL(h, s, l)
-}
-
-const white = new THREE.Color(0xfffdfc)
-const red = new THREE.Color(0xcd4832) //HSL(1, 0.5, 0.5)
-const blue = new THREE.Color(0x0e867f) //HSL(0.5, 0.5, 0.5)
-const grey = new THREE.Color(0x5f5e55) //HSL(0.5, 0.1, 0.5)
-const pink = new THREE.Color(0xe40873)
-const yellow = new THREE.Color(0xfdde3b)
-const gold = new THREE.Color(0xbca961)
-const clay = new THREE.Color(0x615c45)
-const brown = new THREE.Color(0x9d6b49)
-const orange = new THREE.Color(0xe16f00)
-const mustard = new THREE.Color(0xfdce3b)
 
 function massSizeScale(m) {
   return Math.sqrt(m) * 10
@@ -714,6 +700,9 @@ function main() {
   const pendulumView = createPendulumView(
     document.getElementById('pendulum-view')
   )
+  const ellipsoidView = createEllipsoidView(
+    document.getElementById('ellipsoid-view')
+  )
 
   function animate() {
     if (stop) {
@@ -792,6 +781,8 @@ function main() {
 
     const pendulumAngle = system.x2.angleTo(system.angularMomentum)
     pendulumView.update({ angle: pendulumAngle })
+
+    ellipsoidView.render()
   }
 
   window.addEventListener('resize', onWindowResize)
@@ -813,6 +804,8 @@ function main() {
     system.setOmega(state.omega)
     View.spinner.setMasses(...system.getMasses())
     system.zeroTime()
+    const [m1, m2] = system.getMasses()
+    ellipsoidView.update(state.omega, state.L, m1, m2)
   }
 
   const update = (e) => {
@@ -893,7 +886,7 @@ function main() {
   gc(rootGui)
   animate()
   gc(pendulumView)
-
+  gc(ellipsoidView)
   gc({
     cleanup: () => {
       stop = true

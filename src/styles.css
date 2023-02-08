@@ -29,14 +29,27 @@ body {
   --number-color: #00fdf8;
   --text-color: #efede7;
   --title-text-color: #efede7;
+  z-index: 10;
 }
 
 #pendulum-view {
   position: absolute;
   bottom: 0;
   left: 0;
-  width: 400px;
-  height: 400px;
+  width: 300px;
+  height: 300px;
   border-radius: 50%;
   overflow: hidden;
+  z-index: 2;
+}
+
+#ellipsoid-view {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 400px;
+  height: 400px;
+  overflow: hidden;
+  z-index: 2;
+  border: 1px solid rgba(0, 0, 0, 0.5);
 }
