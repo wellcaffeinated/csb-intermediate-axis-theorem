@@ -459,7 +459,7 @@ const setArrow = (obj, v, setLength = false, scale = 1) => {
         0.04 * ARROW_LENGTH
       )
     } else {
-      obj.setLength(ARROW_LENGTH)
+      obj.setLength(scale * ARROW_LENGTH)
     }
     obj.setDirection(n.normalize())
     obj.visible = true
@@ -583,12 +583,15 @@ function makeGui(onChange) {
     showAxes: true,
     showBg: true,
     showPV: true,
+    whichPVTrails: 0,
     trailsFrame: 'match',
     showBodyTrails: true,
+    whichBodyTrails: 0,
     trailLength: 10,
     showOmega: true,
     showJ: true,
     normalizedArrows: true,
+    arrowScale: 1,
     paused: true,
     togglePause: () => {
       state.paused = !state.paused
@@ -656,7 +659,9 @@ function makeGui(onChange) {
 
   const trails = gui.addFolder('Trails')
   trails.add(state, 'showBodyTrails').name('body trails')
+  trails.add(state, 'whichBodyTrails', { Both: 0, Mass1: 1, Mass2: 2 })
   trails.add(state, 'showPV').name('pseudovector trials')
+  trails.add(state, 'whichPVTrails', { Both: 0, J: 1, omega: 2 })
   trails
     .add(state, 'trailsFrame', ['match', ...frameChoices])
     .name('trails frame')
@@ -670,6 +675,7 @@ function makeGui(onChange) {
   arrows.add(state, 'showOmega').name('Show angular velocity')
   arrows.add(state, 'showJ').name('Show angular momentum')
   arrows.add(state, 'normalizedArrows').name('Normalize lengths')
+  arrows.add(state, 'arrowScale').name('Scale factor')
 
   pauseCtrl = gui.add(state, 'togglePause').name('Play')
 
@@ -738,6 +744,7 @@ function main() {
     trails.forEach((t) => t.clear())
   }
 
+  let arrowScale = 1
   let showOmega = true
   let showJ = true
   let rotateJ
@@ -755,12 +762,12 @@ function main() {
     }
     View.spinner.setOrientation(system.qRot)
 
-    setArrow(View.angMomArrow, system.angularMomentum)
+    setArrow(View.angMomArrow, system.angularMomentum, false, arrowScale)
     setArrow(
       View.omegaArrow,
       system.omega,
       !normalizedArrows,
-      1 / system.angularMomentum.length()
+      arrowScale / (!normalizedArrows ? system.angularMomentum.length() : 1)
     )
     View.angMomArrow.visible = showJ && View.angMomArrow.visible
     View.omegaArrow.visible = showOmega && View.omegaArrow.visible
@@ -812,6 +819,7 @@ function main() {
       return
     }
     normalizedArrows = state.normalizedArrows
+    arrowScale = state.arrowScale
     showOmega = state.showOmega
     showJ = state.showJ
     View.axesHelper.visible = state.showAxes
@@ -864,8 +872,12 @@ function main() {
     }
     View.x1Arrow.line.visible = View.x1Arrow.cone.visible = View.x2Arrow.line.visible = View.x2Arrow.cone.visible =
       state.showXVecs
-    View.x1Trail.mesh.visible = View.x2Trail.mesh.visible = state.showBodyTrails
-    View.jTrail.mesh.visible = View.omegaTrail.mesh.visible = state.showPV
+    View.x1Trail.mesh.visible =
+      state.showBodyTrails && state.whichBodyTrails !== 2
+    View.x2Trail.mesh.visible =
+      state.showBodyTrails && state.whichBodyTrails !== 1
+    View.jTrail.mesh.visible = state.showPV && state.whichPVTrails !== 2
+    View.omegaTrail.mesh.visible = state.showPV && state.whichPVTrails !== 1
 
     state.angularMomentum = system.angularMomentum.length()
   }
