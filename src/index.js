@@ -4,6 +4,7 @@ import * as THREE from 'three'
 import { Easing, Util } from 'intween'
 import GUI from 'lil-gui'
 import store from 'store'
+import { createPendulumView } from './pendulum'
 
 import Stats from 'three/examples/jsm/libs/stats.module.js'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
@@ -710,6 +711,9 @@ function main() {
   let normalizedArrows = true
 
   const system = createSystem()
+  const pendulumView = createPendulumView(
+    document.getElementById('pendulum-view')
+  )
 
   function animate() {
     if (stop) {
@@ -785,6 +789,9 @@ function main() {
     // View.camera.lookAt(View.scene.position)
     // renderer.render(View.scene, View.camera)
     View.composer.render()
+
+    const pendulumAngle = system.x2.angleTo(system.angularMomentum)
+    pendulumView.update({ angle: pendulumAngle })
   }
 
   window.addEventListener('resize', onWindowResize)
@@ -885,6 +892,7 @@ function main() {
   const { rootGui } = makeGui(update)
   gc(rootGui)
   animate()
+  gc(pendulumView)
 
   gc({
     cleanup: () => {

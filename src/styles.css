@@ -30,3 +30,13 @@ body {
   --text-color: #efede7;
   --title-text-color: #efede7;
 }
+
+#pendulum-view {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 400px;
+  height: 400px;
+  border-radius: 50%;
+  overflow: hidden;
+}

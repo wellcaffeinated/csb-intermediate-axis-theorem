@@ -8,6 +8,7 @@
     "build": "parcel build index.html"
   },
   "dependencies": {
+    "@wellcaffeinated/view-draw": "0.0.4",
     "intween": "1.0.0-beta.7",
     "lil-gui": "0.16.1",
     "lodash": "4.17.21",
