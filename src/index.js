@@ -612,14 +612,28 @@ function makeGui(onChange) {
   cameraFolder.add(View.camera.position, 'y')
   cameraFolder.add(View.camera.position, 'z')
 
-  gui.add(state, 'psi', 0, 180, 1)
-  gui.add(state, 'chi', 0, 180, 1)
-  gui.add(state, 'L', 0, 0.03, 0.001).name('L')
-  const escalectrl = gui
+  const initialConditions = gui.addFolder('Initial Conditions')
+
+  const setMinEscale = () => {
+    // const c = Math.sqrt(1 + state.r)
+    // const Ttilmin = 1 / c / c
+    // escalectrl.min(Ttilmin)
+    // escalectrl.setValue(Math.max(state.energy_scale, Ttilmin))
+    setOmegaFromEnergy()
+  }
+
+  initialConditions.add(state, 'psi', 0, 180, 1)
+  initialConditions.add(state, 'chi', 0, 180, 1)
+  initialConditions.add(state, 'L', 0, 0.03, 0.001).name('L')
+  initialConditions
+    .add(state, 'r', 0.01, 1, 0.01)
+    .name('mass ratio')
+    .onChange(setMinEscale)
+  const escalectrl = initialConditions
     .add(state, 'energy_scale', 0, 1, 0.001)
     .name('energy amount')
 
-  gui
+  initialConditions
     .add(
       {
         fn() {
@@ -629,20 +643,23 @@ function makeGui(onChange) {
       'fn'
     )
     .name('Set to instability')
-
-  const setMinEscale = () => {
-    // const c = Math.sqrt(1 + state.r)
-    // const Ttilmin = 1 / c / c
-    // escalectrl.min(Ttilmin)
-    // escalectrl.setValue(Math.max(state.energy_scale, Ttilmin))
-    setOmegaFromEnergy()
-  }
   setMinEscale()
-  gui.add(state, 'r', 0.01, 1, 0.01).name('mass ratio').onChange(setMinEscale)
-  const omega = gui.addFolder('Angular Velocity')
+
+  const omega = gui.addFolder('Angular Velocity').close()
   omega.add(state, 'w_x', -0.02, 0.02, 1e-6).listen()
   omega.add(state, 'w_y', -0.02, 0.02, 1e-6).listen()
   omega.add(state, 'w_z', -0.02, 0.02, 1e-6).listen()
+
+  const look = gui.addFolder('Perspective')
+  look.add(state, 'showAxes').name('axes')
+  look.add(state, 'showBg').name('environment')
+  look.add(state, 'frame', frameChoices)
+
+  const arrows = gui.addFolder('Arrows')
+  arrows.add(state, 'showOmega').name('Show angular velocity')
+  arrows.add(state, 'showJ').name('Show angular momentum')
+  arrows.add(state, 'normalizedArrows').name('Normalize lengths')
+  arrows.add(state, 'arrowScale').name('Scale factor')
 
   const trails = gui.addFolder('Trails')
   trails.add(state, 'showBodyTrails').name('body trails')
@@ -652,17 +669,7 @@ function makeGui(onChange) {
   trails
     .add(state, 'trailsFrame', ['match', ...frameChoices])
     .name('trails frame')
-  trails.add(state, 'trailLength', 1, 20, 0.1).name('trail length')
-
-  gui.add(state, 'showAxes').name('axes')
-  gui.add(state, 'showBg').name('environment')
-  gui.add(state, 'frame', frameChoices)
-
-  const arrows = gui.addFolder('Arrows')
-  arrows.add(state, 'showOmega').name('Show angular velocity')
-  arrows.add(state, 'showJ').name('Show angular momentum')
-  arrows.add(state, 'normalizedArrows').name('Normalize lengths')
-  arrows.add(state, 'arrowScale').name('Scale factor')
+  trails.add(state, 'trailLength', 1, 50, 0.1).name('trail length')
 
   pauseCtrl = gui.add(state, 'togglePause').name('Play')
 
@@ -674,7 +681,7 @@ function makeGui(onChange) {
   })
   onChange({ object: state })
 
-  const metrics = rootGui.addFolder('Metrics')
+  const metrics = rootGui.addFolder('Metrics').close()
   metrics.add(state, 'angularMomentum').disable().listen()
 
   return {
@@ -737,6 +744,13 @@ function main() {
     trails.forEach((t) => t.clear())
   }
 
+  const getPendulumAngle = (x1, x2, L) => {
+    const alpha = tmpV.copy(L).cross(x2).angleTo(x1)
+    const sign = alpha > Math.PI / 2 ? 1 : -1
+    tmpV.copy(L).projectOnPlane(x1)
+    return 2 * sign * tmpV.angleTo(x2) - Math.PI / 2
+  }
+
   let arrowScale = 1
   let showOmega = true
   let showJ = true
@@ -779,9 +793,11 @@ function main() {
     // renderer.render(View.scene, View.camera)
     View.composer.render()
 
-    const pendulumAngle = system.x2.angleTo(system.angularMomentum)
-    pendulumView.update({ angle: pendulumAngle })
-
+    pendulumView.update({
+      angle: getPendulumAngle(system.x1, system.x2, system.angularMomentum),
+    })
+    // const [m1, m2] = system.getMasses()
+    // ellipsoidView.update(system.omega, system.angularMomentum.length(), m1, m2)
     ellipsoidView.render()
   }
 
@@ -805,7 +821,7 @@ function main() {
     View.spinner.setMasses(...system.getMasses())
     system.zeroTime()
     const [m1, m2] = system.getMasses()
-    ellipsoidView.update(state.omega, state.L, m1, m2)
+    ellipsoidView.update(state.energy_scale, state.L, m1, m2)
   }
 
   const update = (e) => {
