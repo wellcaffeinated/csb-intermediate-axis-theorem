@@ -6,7 +6,7 @@ import { Easing, Util } from 'intween'
 import GUI from 'lil-gui'
 import store from 'store'
 import { createPendulumView } from './pendulum'
-import { createEllipsoidView } from './ellipsoid'
+import { createEllipsoidView, createEllipsoids } from './ellipsoid'
 
 import Stats from 'three/examples/jsm/libs/stats.module.js'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
@@ -187,9 +187,13 @@ function init() {
   View.scene.add(View.cameraContainer)
   View.camera.lookAt(View.scene.position)
 
+  // ellipsoids
+  View.ellipsoids = createEllipsoids(256)
+  View.ellipsoids.group.rotation.set(Math.PI / 2, Math.PI / 2, 0)
   // spinner
 
   View.spinner = createSpinner()
+  View.spinner.group.add(View.ellipsoids.group)
   View.layout.add(View.spinner.group)
 
   // arrows
@@ -586,6 +590,7 @@ function makeGui(onChange) {
     showAxes: true,
     showBg: true,
     singleSidedMasses: false,
+    showEllipsoids: false,
     showPV: true,
     whichPVTrails: 0,
     trailsFrame: 'match',
@@ -676,6 +681,7 @@ function makeGui(onChange) {
     })
   look.add(state, 'showAxes').name('axes')
   look.add(state, 'showBg').name('environment')
+  look.add(state, 'showEllipsoids', 'Show Ellipsoids')
   look.add(state, 'frame', frameChoices)
 
   const arrows = gui.addFolder('Arrows')
@@ -793,13 +799,12 @@ function main() {
     }
     View.spinner.setOrientation(system.qRot)
 
-    setArrow(View.angMomArrow, system.angularMomentum, false, arrowScale)
-    setArrow(
-      View.omegaArrow,
-      system.omega,
-      !normalizedArrows,
+    const Lscale =
       arrowScale / (!normalizedArrows ? system.angularMomentum.length() : 1)
-    )
+    View.ellipsoids.setScale(arrowScale * ARROW_LENGTH)
+
+    setArrow(View.angMomArrow, system.angularMomentum, false, arrowScale)
+    setArrow(View.omegaArrow, system.omega, !normalizedArrows, Lscale)
     View.angMomArrow.visible = showJ && View.angMomArrow.visible
     View.omegaArrow.visible = showOmega && View.omegaArrow.visible
     setArrow(View.x1Arrow, system.x1)
@@ -846,6 +851,7 @@ function main() {
     system.zeroTime()
     const [m1, m2] = system.getMasses()
     ellipsoidView.update(state.energy_scale, state.L, m1, m2)
+    View.ellipsoids.update(state.energy_scale, state.L, m1, m2)
   }
 
   const update = (e) => {
@@ -919,6 +925,7 @@ function main() {
     View.jTrail.mesh.visible = state.showPV && state.whichPVTrails !== 2
     View.omegaTrail.mesh.visible = state.showPV && state.whichPVTrails !== 1
 
+    View.ellipsoids.group.visible = state.showEllipsoids
     state.angularMomentum = system.angularMomentum.length()
   }
 

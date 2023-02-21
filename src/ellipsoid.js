@@ -2,20 +2,9 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { white, red, blue, grey, pink, mustard } from './colors'
 
-export function createEllipsoidView(el) {
-  // Create scene, camera and renderer
-  const scene = new THREE.Scene()
-  const renderer = new THREE.WebGLRenderer()
-
-  const { width, height } = el.getBoundingClientRect()
-  el.appendChild(renderer.domElement)
-
-  renderer.setSize(width, height)
-  // const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000)
-  const camera = new THREE.OrthographicCamera(-10, 10, 10, -10, 1, 1000)
-
+export function createEllipsoids(resolution = 128) {
   // Create sphere geometry and material
-  const geometry = new THREE.SphereGeometry(5, 128, 128)
+  const geometry = new THREE.SphereGeometry(1, resolution, resolution)
   const material = new THREE.MeshStandardMaterial({
     color: pink,
     transparent: true,
@@ -48,33 +37,21 @@ export function createEllipsoidView(el) {
     wireframe: true,
   })
 
-  const wfgeo = new THREE.SphereGeometry(5, 16, 16)
+  const wfgeo = new THREE.SphereGeometry(1, 16, 16)
   const wf = new THREE.Mesh(wfgeo, wireframeMaterial)
-  scene.add(wf)
-
-  // Add sphere to the scene
-  scene.add(sphere)
-
-  // Add sphere to the scene
-  scene.add(ellipsoid)
 
   wf.renderOrder = 1
   sphere.renderOrder = 2
   ellipsoid.renderOrder = 3
 
-  // Set camera position
-  camera.position.set(20, 0, 0)
+  const Tobj = new THREE.Group()
+  Tobj.add(wf, ellipsoid)
 
-  // Add OrbitControls
-  const controls = new OrbitControls(camera, renderer.domElement)
+  const Lobj = new THREE.Group()
+  Lobj.add(sphere)
 
-  // Add lights
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
-  scene.add(ambientLight)
-
-  const pointLight = new THREE.PointLight(0xffffff, 1, 100)
-  pointLight.position.set(10, 10, 10)
-  scene.add(pointLight)
+  const group = new THREE.Group()
+  group.add(Tobj, Lobj)
 
   const update = (Escale, L, m1, m2) => {
     const M = 2 * m1 + 2 * m2
@@ -93,9 +70,59 @@ export function createEllipsoidView(el) {
     const a = Math.sqrt(2 * z * I1)
     const b = Math.sqrt(2 * z * I2)
     const c = Math.sqrt(2 * z * I3)
-    ellipsoid.scale.set(a, b, c)
-    wf.scale.copy(ellipsoid.scale)
+    Tobj.scale.set(a, b, c)
   }
+
+  const setScale = (scale) => {
+    group.scale.set(scale, scale, scale)
+  }
+
+  return {
+    Tobj,
+    Lobj,
+    group,
+    setScale,
+    update,
+  }
+}
+
+export function createEllipsoidView(el) {
+  // Create scene, camera and renderer
+  const scene = new THREE.Scene()
+  const renderer = new THREE.WebGLRenderer()
+
+  const { width, height } = el.getBoundingClientRect()
+  el.appendChild(renderer.domElement)
+
+  renderer.setSize(width, height)
+  const aspectRatio = width / height
+  // const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000)
+  const camera = new THREE.OrthographicCamera(
+    -1.5 * aspectRatio,
+    1.5 * aspectRatio,
+    1.5,
+    -1.5,
+    1,
+    1000
+  )
+
+  const { update, group } = createEllipsoids()
+
+  scene.add(group)
+
+  // Set camera position
+  camera.position.set(20, 0, 0)
+
+  // Add OrbitControls
+  const controls = new OrbitControls(camera, renderer.domElement)
+
+  // Add lights
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
+  scene.add(ambientLight)
+
+  const pointLight = new THREE.PointLight(0xffffff, 1, 100)
+  pointLight.position.set(10, 10, 10)
+  scene.add(pointLight)
 
   // Animate the scene
   const render = () => {
