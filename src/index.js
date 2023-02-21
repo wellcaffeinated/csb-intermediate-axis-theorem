@@ -24,7 +24,7 @@ import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js'
 
 import { createSystem } from './physics'
-import { Vector2, Vector3 } from 'three'
+import { Group, Vector2, Vector3 } from 'three'
 import { Trail } from './trails'
 import { white, red, blue, grey, pink, mustard } from './colors'
 
@@ -100,12 +100,20 @@ function createSpinner(texture) {
   plate.rotation.set(0, Math.PI / 2, 0)
   group.add(plate)
 
-  const cyl = new THREE.CylinderGeometry(0.5, 0.5, 200, 32)
-  const rod = new THREE.Mesh(cyl, material)
-  rod.castShadow = true
-  rod.receiveShadow = true
-  rod.rotation.set(0, 0, 0)
-  group.add(rod)
+  const cyl = new THREE.CylinderGeometry(0.5, 0.5, 100, 32)
+  const rod1 = new THREE.Mesh(cyl, material)
+  rod1.castShadow = true
+  rod1.receiveShadow = true
+  rod1.rotation.set(0, 0, 0)
+  rod1.position.set(0, 50, 0)
+  const rod2 = new THREE.Mesh(cyl, material)
+  rod2.castShadow = true
+  rod2.receiveShadow = true
+  rod2.rotation.set(0, 0, 0)
+  rod2.position.set(0, -50, 0)
+  const rods = new THREE.Group()
+  rods.add(rod1, rod2)
+  group.add(rods)
 
   // const axesHelper = new THREE.AxesHelper(500)
   // group.add(axesHelper)
@@ -127,7 +135,13 @@ function createSpinner(texture) {
     massY1.mesh.scale.set(sy, sy, sy)
     massY2.mesh.scale.set(sy, sy, sy)
     plate.scale.set(1, m2 / m1, 1)
-    rod.visible = !!m2
+    rods.visible = !!m2
+  }
+
+  const setSingleSided = (toggle) => {
+    massX2.mesh.visible = !toggle
+    massY2.mesh.visible = !toggle
+    rod2.visible = !toggle
   }
 
   setMasses(1, 1)
@@ -137,6 +151,7 @@ function createSpinner(texture) {
     group,
     setRotation,
     setMasses,
+    setSingleSided,
     setOrientation,
   }
 }
@@ -570,6 +585,7 @@ function makeGui(onChange) {
     showXVecs: false,
     showAxes: true,
     showBg: true,
+    singleSidedMasses: false,
     showPV: true,
     whichPVTrails: 0,
     trailsFrame: 'match',
@@ -627,7 +643,7 @@ function makeGui(onChange) {
   initialConditions.add(state, 'chi', 0, 180, 1)
   initialConditions.add(state, 'L', 0, 0.03, 0.001).name('L')
   initialConditions
-    .add(state, 'r', 0.01, 1, 0.01)
+    .add(state, 'r', 0.02, 1, 0.01)
     .name('mass ratio')
     .onChange(setMinEscale)
   const escalectrl = initialConditions
@@ -651,7 +667,13 @@ function makeGui(onChange) {
   omega.add(state, 'w_y', -0.02, 0.02, 1e-6).listen()
   omega.add(state, 'w_z', -0.02, 0.02, 1e-6).listen()
 
-  const look = gui.addFolder('Perspective')
+  const look = gui.addFolder('View Options')
+  look
+    .add(state, 'singleSidedMasses')
+    .name('Single Sided Masses')
+    .onChange((toggle) => {
+      View.spinner.setSingleSided(toggle)
+    })
   look.add(state, 'showAxes').name('axes')
   look.add(state, 'showBg').name('environment')
   look.add(state, 'frame', frameChoices)
