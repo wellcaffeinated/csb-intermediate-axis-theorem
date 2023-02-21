@@ -1,5 +1,6 @@
 import './styles.css'
 
+import _ from 'lodash'
 import * as THREE from 'three'
 import { Easing, Util } from 'intween'
 import GUI from 'lil-gui'
@@ -744,10 +745,11 @@ function main() {
     trails.forEach((t) => t.clear())
   }
 
+  const FUDGE = new THREE.Vector3(1, 1, 1).normalize()
   const getPendulumAngle = (x1, x2, L) => {
-    const alpha = tmpV.copy(L).cross(x2).angleTo(x1)
+    const alpha = tmpV.copy(L).lerp(FUDGE, 1e-6).cross(x2).angleTo(x1)
     const sign = alpha > Math.PI / 2 ? 1 : -1
-    tmpV.copy(L).projectOnPlane(x1)
+    tmpV.copy(L).lerp(FUDGE, 1e-6).projectOnPlane(x1)
     return 2 * sign * tmpV.angleTo(x2) - Math.PI / 2
   }
 
