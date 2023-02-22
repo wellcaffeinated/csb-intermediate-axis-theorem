@@ -6,7 +6,11 @@ import { Easing, Util } from 'intween'
 import GUI from 'lil-gui'
 import store from 'store'
 import { createPendulumView } from './pendulum'
-import { createEllipsoidView, createEllipsoids } from './ellipsoid'
+import {
+  createEllipsoidView,
+  createEllipsoids,
+  createRollingEllipsoid,
+} from './ellipsoid'
 
 import Stats from 'three/examples/jsm/libs/stats.module.js'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
@@ -190,10 +194,13 @@ function init() {
   // ellipsoids
   View.ellipsoids = createEllipsoids(256)
   View.ellipsoids.group.rotation.set(Math.PI / 2, Math.PI / 2, 0)
+
+  View.rollingEllipsoid = createRollingEllipsoid()
+  View.rollingEllipsoid.group.rotation.set(Math.PI / 2, Math.PI / 2, 0)
   // spinner
 
   View.spinner = createSpinner()
-  View.spinner.group.add(View.ellipsoids.group)
+  View.spinner.group.add(View.ellipsoids.group, View.rollingEllipsoid.group)
   View.layout.add(View.spinner.group)
 
   // arrows
@@ -591,6 +598,7 @@ function makeGui(onChange) {
     showBg: true,
     singleSidedMasses: false,
     showEllipsoids: false,
+    showRollingEllipsoid: false,
     showPV: true,
     whichPVTrails: 0,
     trailsFrame: 'match',
@@ -681,7 +689,8 @@ function makeGui(onChange) {
     })
   look.add(state, 'showAxes').name('axes')
   look.add(state, 'showBg').name('environment')
-  look.add(state, 'showEllipsoids', 'Show Ellipsoids')
+  look.add(state, 'showEllipsoids').name('Show Ellipsoids')
+  look.add(state, 'showRollingEllipsoid').name('Show Rolling Ellipsoid')
   look.add(state, 'frame', frameChoices)
 
   const arrows = gui.addFolder('Arrows')
@@ -802,6 +811,7 @@ function main() {
     const Lscale =
       arrowScale / (!normalizedArrows ? system.angularMomentum.length() : 1)
     View.ellipsoids.setScale(arrowScale * ARROW_LENGTH)
+    View.rollingEllipsoid.setScale(ARROW_LENGTH * arrowScale)
 
     setArrow(View.angMomArrow, system.angularMomentum, false, arrowScale)
     setArrow(View.omegaArrow, system.omega, !normalizedArrows, Lscale)
@@ -850,8 +860,27 @@ function main() {
     View.spinner.setMasses(...system.getMasses())
     system.zeroTime()
     const [m1, m2] = system.getMasses()
-    ellipsoidView.update(state.energy_scale, state.L, m1, m2)
-    View.ellipsoids.update(state.energy_scale, state.L, m1, m2)
+    ellipsoidView.update(
+      state.energy_scale,
+      system.angularMomentum,
+      system.omega,
+      m1,
+      m2
+    )
+    View.ellipsoids.update(
+      state.energy_scale,
+      system.angularMomentum,
+      system.omega,
+      m1,
+      m2
+    )
+    View.rollingEllipsoid.update(
+      state.energy_scale,
+      system.angularMomentum,
+      system.omega,
+      m1,
+      m2
+    )
   }
 
   const update = (e) => {
@@ -926,6 +955,7 @@ function main() {
     View.omegaTrail.mesh.visible = state.showPV && state.whichPVTrails !== 1
 
     View.ellipsoids.group.visible = state.showEllipsoids
+    View.rollingEllipsoid.group.visible = state.showRollingEllipsoid
     state.angularMomentum = system.angularMomentum.length()
   }
 

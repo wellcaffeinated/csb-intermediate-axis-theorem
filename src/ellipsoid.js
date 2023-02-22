@@ -2,6 +2,55 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { white, red, blue, grey, pink, mustard } from './colors'
 
+export function createRollingEllipsoid(resolution = 128) {
+  // Create sphere geometry and material
+  const geometry = new THREE.SphereGeometry(1, resolution, resolution)
+  const material = new THREE.MeshStandardMaterial({
+    color: mustard,
+    transparent: true,
+    opacity: 0.5,
+    roughness: 0.2,
+    // depthFunc: THREE.AlwaysDepth,
+    side: THREE.DoubleSide,
+  })
+  // Create sphere mesh
+  const ellipsoid = new THREE.Mesh(geometry, material)
+
+  const group = new THREE.Group()
+  group.add(ellipsoid)
+
+  const update = (Escale, L, w, m1, m2) => {
+    const M = 2 * m1 + 2 * m2
+    const r = m2 / m1
+    const csq = 1 + 1 / r
+    const I1 = 2 * m1
+    const I2 = 2 * m2
+    const I3 = M
+    // const wx = omega.x
+    // const wy = omega.y
+    // const wz = omega.z
+    // const E = 0.5 * (I1 * wx * wx + I2 * wy * wy + I3 * wz * wz)
+    const Ttilmin = 1 / csq
+    const Ttil = THREE.MathUtils.lerp(Ttilmin, 1, Escale)
+    const z = Ttil / 2 / I2
+    const a = Math.sqrt((2 * z) / I1)
+    const b = Math.sqrt((2 * z) / I2)
+    const c = Math.sqrt((2 * z) / I3)
+    ellipsoid.scale.set(a, b, c)
+  }
+
+  const setScale = (scale) => {
+    group.scale.set(scale, scale, scale)
+  }
+
+  return {
+    ellipsoid,
+    group,
+    setScale,
+    update,
+  }
+}
+
 export function createEllipsoids(resolution = 128) {
   // Create sphere geometry and material
   const geometry = new THREE.SphereGeometry(1, resolution, resolution)
@@ -53,7 +102,7 @@ export function createEllipsoids(resolution = 128) {
   const group = new THREE.Group()
   group.add(Tobj, Lobj)
 
-  const update = (Escale, L, m1, m2) => {
+  const update = (Escale, L, w, m1, m2) => {
     const M = 2 * m1 + 2 * m2
     const r = m2 / m1
     const csq = 1 + 1 / r
