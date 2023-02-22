@@ -33,6 +33,7 @@ import { Trail } from './trails'
 import { white, red, blue, grey, pink, mustard } from './colors'
 
 import { $GC, $, $$ } from './slick-csb'
+import { createKissingSpheres } from './kissing-spheres'
 
 const gc = $GC(module)
 
@@ -202,6 +203,9 @@ function init() {
   View.spinner = createSpinner()
   View.spinner.group.add(View.ellipsoids.group, View.rollingEllipsoid.group)
   View.layout.add(View.spinner.group)
+
+  View.kissingSpheres = createKissingSpheres()
+  View.layout.add(View.kissingSpheres.group)
 
   // arrows
   View.angMomArrow = new THREE.ArrowHelper(
@@ -599,6 +603,7 @@ function makeGui(onChange) {
     singleSidedMasses: false,
     showEllipsoids: false,
     showRollingEllipsoid: false,
+    showKissingSpheres: false,
     showPV: true,
     whichPVTrails: 0,
     trailsFrame: 'match',
@@ -607,7 +612,7 @@ function makeGui(onChange) {
     trailLength: 10,
     showOmega: true,
     showJ: true,
-    normalizedArrows: true,
+    normalizedArrows: false,
     arrowScale: 1,
     paused: true,
     togglePause: () => {
@@ -691,6 +696,7 @@ function makeGui(onChange) {
   look.add(state, 'showBg').name('environment')
   look.add(state, 'showEllipsoids').name('Show Ellipsoids')
   look.add(state, 'showRollingEllipsoid').name('Show Rolling Ellipsoid')
+  look.add(state, 'showKissingSpheres').name('Show Kissing Spheres')
   look.add(state, 'frame', frameChoices)
 
   const arrows = gui.addFolder('Arrows')
@@ -811,8 +817,10 @@ function main() {
 
     const Lscale =
       arrowScale / (!normalizedArrows ? system.angularMomentum.length() : 1)
+
     View.ellipsoids.setScale(arrowScale * ARROW_LENGTH)
     View.rollingEllipsoid.setScale(arrowScale * ARROW_LENGTH)
+    View.kissingSpheres.setScale(arrowScale * ARROW_LENGTH)
 
     setArrow(View.angMomArrow, system.angularMomentum, false, arrowScale)
     setArrow(View.omegaArrow, system.omega, !normalizedArrows, Lscale)
@@ -876,6 +884,13 @@ function main() {
       m2
     )
     View.rollingEllipsoid.update(
+      state.energy_scale,
+      system.angularMomentum,
+      state.omega,
+      m1,
+      m2
+    )
+    View.kissingSpheres.update(
       state.energy_scale,
       system.angularMomentum,
       state.omega,
@@ -957,6 +972,7 @@ function main() {
 
     View.ellipsoids.group.visible = state.showEllipsoids
     View.rollingEllipsoid.group.visible = state.showRollingEllipsoid
+    View.kissingSpheres.group.visible = state.showKissingSpheres
     state.angularMomentum = system.angularMomentum.length()
   }
 
