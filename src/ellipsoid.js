@@ -22,11 +22,11 @@ export function createRollingEllipsoid(resolution = 128) {
   group.add(ellipsoid)
 
   const update = (Escale, L, w, m1, m2) => {
-    const M = 2 * m1 + 2 * m2
+    const M = m1 + m2
     const r = m2 / m1
     const csq = 1 + 1 / r
-    const I1 = 2 * m1
-    const I2 = 2 * m2
+    const I1 = m1
+    const I2 = m2
     const I3 = M
     // const wx = omega.x
     // const wy = omega.y
@@ -34,7 +34,7 @@ export function createRollingEllipsoid(resolution = 128) {
     // const E = 0.5 * (I1 * wx * wx + I2 * wy * wy + I3 * wz * wz)
     const Ttilmin = 1 / csq
     const Ttil = THREE.MathUtils.lerp(Ttilmin, 1, Escale)
-    const conv = w.lengthSq() / L.lengthSq()
+    const conv = M //L.lengthSq() / w.lengthSq()
     const z = (conv * Ttil) / 2 / I2
     const a = Math.sqrt((2 * z) / I1)
     const b = Math.sqrt((2 * z) / I2)
@@ -106,11 +106,11 @@ export function createEllipsoids(resolution = 128) {
   group.add(Tobj, Lobj)
 
   const update = (Escale, L, w, m1, m2) => {
-    const M = 2 * m1 + 2 * m2
+    const M = m1 + m2
     const r = m2 / m1
     const csq = 1 + 1 / r
-    const I1 = 2 * m1
-    const I2 = 2 * m2
+    const I1 = m1
+    const I2 = m2
     const I3 = M
     // const wx = omega.x
     // const wy = omega.y

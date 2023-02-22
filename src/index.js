@@ -812,7 +812,7 @@ function main() {
     const Lscale =
       arrowScale / (!normalizedArrows ? system.angularMomentum.length() : 1)
     View.ellipsoids.setScale(arrowScale * ARROW_LENGTH)
-    View.rollingEllipsoid.setScale(ARROW_LENGTH * arrowScale)
+    View.rollingEllipsoid.setScale(arrowScale * ARROW_LENGTH)
 
     setArrow(View.angMomArrow, system.angularMomentum, false, arrowScale)
     setArrow(View.omegaArrow, system.omega, !normalizedArrows, Lscale)
@@ -878,7 +878,7 @@ function main() {
     View.rollingEllipsoid.update(
       state.energy_scale,
       system.angularMomentum,
-      system.omega,
+      state.omega,
       m1,
       m2
     )
