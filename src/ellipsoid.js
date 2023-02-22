@@ -2,6 +2,8 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { white, red, blue, grey, pink, mustard } from './colors'
 
+// Ttil = T / (L^2/I2/2)
+
 export function createRollingEllipsoid(resolution = 128) {
   // Create sphere geometry and material
   const geometry = new THREE.SphereGeometry(1, resolution, resolution)
@@ -32,7 +34,8 @@ export function createRollingEllipsoid(resolution = 128) {
     // const E = 0.5 * (I1 * wx * wx + I2 * wy * wy + I3 * wz * wz)
     const Ttilmin = 1 / csq
     const Ttil = THREE.MathUtils.lerp(Ttilmin, 1, Escale)
-    const z = Ttil / 2 / I2
+    const conv = w.lengthSq() / L.lengthSq()
+    const z = (conv * Ttil) / 2 / I2
     const a = Math.sqrt((2 * z) / I1)
     const b = Math.sqrt((2 * z) / I2)
     const c = Math.sqrt((2 * z) / I3)

@@ -740,6 +740,7 @@ function main() {
   let trailsTarget = View.scene
   let trailsFrame = View.layout
   let normalizedArrows = true
+  let arrowScale = 1
 
   const system = createSystem()
   const pendulumView = createPendulumView(
@@ -775,6 +776,7 @@ function main() {
     } else {
       tmpV.multiplyScalar(1 / system.angularMomentum.length())
     }
+    tmpV.multiplyScalar(arrowScale)
     View.omegaTrail.update(tmpV, trailsTarget)
   }
 
@@ -790,7 +792,6 @@ function main() {
     return 2 * sign * tmpV.angleTo(x2) - Math.PI / 2
   }
 
-  let arrowScale = 1
   let showOmega = true
   let showJ = true
   let rotateJ
