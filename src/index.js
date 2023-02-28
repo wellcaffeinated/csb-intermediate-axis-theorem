@@ -1,6 +1,5 @@
 import './styles.css'
 
-import _ from 'lodash'
 import * as THREE from 'three'
 import { Easing, Util } from 'intween'
 import GUI from 'lil-gui'
@@ -10,6 +9,7 @@ import {
   createEllipsoidView,
   createEllipsoids,
   createRollingEllipsoid,
+  createRollingMomentumEllipsoid,
 } from './ellipsoid'
 
 import Stats from 'three/examples/jsm/libs/stats.module.js'
@@ -30,7 +30,7 @@ import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js'
 import { createSystem } from './physics'
 import { Group, Vector2, Vector3 } from 'three'
 import { Trail } from './trails'
-import { white, red, blue, grey, pink, mustard } from './colors'
+import { white, red, blue, grey, pink, mustard, orange } from './colors'
 
 import { $GC, $, $$ } from './slick-csb'
 import { createKissingSpheres } from './kissing-spheres'
@@ -170,6 +170,7 @@ function init() {
   View.scene.fog = new THREE.Fog(white, 1000, 5000)
   View.layout = new THREE.Group()
   View.layout.rotation.set(-Math.PI / 2, 0, 0)
+  View.layoutQ = new THREE.Quaternion().setFromEuler(View.layout.rotation)
   View.scene.add(View.layout)
 
   View.Jframe = new THREE.Object3D()
@@ -198,10 +199,24 @@ function init() {
 
   View.rollingEllipsoid = createRollingEllipsoid()
   View.rollingEllipsoid.group.rotation.set(Math.PI / 2, Math.PI / 2, 0)
+
+  const plane = new THREE.Plane(new THREE.Vector3(1, 1, 1), 0)
+  const helper = new THREE.PlaneHelper(plane, 1000, 0x000000)
+  helper.children[0].material.side = THREE.DoubleSide
+  // helper.rotation.set(Math.PI / 2, Math.PI / 2, 0)
+  View.omegaPlane = helper
+  View.scene.add(helper)
+
+  View.rollingMomentumEllipsoid = createRollingMomentumEllipsoid()
+  View.rollingMomentumEllipsoid.group.rotation.set(Math.PI / 2, Math.PI / 2, 0)
   // spinner
 
   View.spinner = createSpinner()
-  View.spinner.group.add(View.ellipsoids.group, View.rollingEllipsoid.group)
+  View.spinner.group.add(
+    View.ellipsoids.group,
+    View.rollingEllipsoid.group,
+    View.rollingMomentumEllipsoid.group
+  )
   View.layout.add(View.spinner.group)
 
   View.kissingSpheres = createKissingSpheres()
@@ -601,9 +616,19 @@ function makeGui(onChange) {
     showAxes: true,
     showBg: true,
     singleSidedMasses: false,
+
+    showOmegaPlane: false,
     showEllipsoids: false,
+    ELopacity: 0.7,
+    LLopacity: 0.7,
     showRollingEllipsoid: false,
+    Ewopacity: 0.5,
+    showRollingMomentumEllipsoid: false,
+    Lwopacity: 0.5,
     showKissingSpheres: false,
+    kissInnerOpacity: 0.7,
+    kissOuterOpacity: 0.5,
+
     showPV: true,
     whichPVTrails: 0,
     trailsFrame: 'match',
@@ -694,10 +719,53 @@ function makeGui(onChange) {
     })
   look.add(state, 'showAxes').name('axes')
   look.add(state, 'showBg').name('environment')
-  look.add(state, 'showEllipsoids').name('Show Ellipsoids')
-  look.add(state, 'showRollingEllipsoid').name('Show Rolling Ellipsoid')
-  look.add(state, 'showKissingSpheres').name('Show Kissing Spheres')
   look.add(state, 'frame', frameChoices)
+
+  // ellipsoids
+  const ell = gui.addFolder('Ellipsoids')
+  ell.add(state, 'showOmegaPlane').name('Show Omega Plane')
+  ell.add(state, 'showEllipsoids').name('Show L space Ellipsoids')
+  const setLspaceOpacity = () =>
+    View.ellipsoids.setOpacity(state.ELopacity, state.LLopacity)
+  ell
+    .add(state, 'LLopacity', 0, 1, 0.1)
+    .name('L²(L) opacity')
+    .onChange(setLspaceOpacity)
+  ell
+    .add(state, 'ELopacity', 0, 1, 0.1)
+    .name('E(L) opacity')
+    .onChange(setLspaceOpacity)
+  ell.add(state, 'showRollingEllipsoid').name('Show E(w) Ellipsoid')
+  const setWspaceOpacity = () => {
+    View.rollingEllipsoid.setOpacity(state.Ewopacity)
+    View.rollingMomentumEllipsoid.setOpacity(state.Lwopacity)
+  }
+  ell
+    .add(state, 'Ewopacity', 0, 1, 0.1)
+    .name('E(w) opacity')
+    .onChange(setWspaceOpacity)
+  ell
+    .add(state, 'showRollingMomentumEllipsoid')
+    .name('Show L²(w) space Ellipsoid')
+  ell
+    .add(state, 'Lwopacity', 0, 1, 0.1)
+    .name('L²(w) opacity')
+    .onChange(setWspaceOpacity)
+  ell.add(state, 'showKissingSpheres').name('Show Kissing Spheres')
+  const setKissOpacity = () => {
+    View.kissingSpheres.setOpacity(
+      state.kissOuterOpacity,
+      state.kissInnerOpacity
+    )
+  }
+  ell
+    .add(state, 'kissInnerOpacity', 0, 1, 0.1)
+    .name('Inner opacity')
+    .onChange(setKissOpacity)
+  ell
+    .add(state, 'kissOuterOpacity', 0, 1, 0.1)
+    .name('Outer opacity')
+    .onChange(setKissOpacity)
 
   const arrows = gui.addFolder('Arrows')
   arrows.add(state, 'showOmega').name('Show angular velocity')
@@ -815,15 +883,21 @@ function main() {
     }
     View.spinner.setOrientation(system.qRot)
 
-    const Lscale =
+    const omegaScale =
       arrowScale / (!normalizedArrows ? system.angularMomentum.length() : 1)
 
     View.ellipsoids.setScale(arrowScale * ARROW_LENGTH)
     View.rollingEllipsoid.setScale(arrowScale * ARROW_LENGTH)
     View.kissingSpheres.setScale(arrowScale * ARROW_LENGTH)
+    View.rollingMomentumEllipsoid.setScale(arrowScale * ARROW_LENGTH)
+    View.omegaPlane.plane.normal.copy(system.angularMomentum).multiplyScalar(-1)
+    View.omegaPlane.plane.normal.applyQuaternion(View.layoutQ)
+    View.omegaPlane.plane.constant =
+      (arrowScale * ARROW_LENGTH * system.omega.dot(system.angularMomentum)) /
+      system.angularMomentum.lengthSq()
 
     setArrow(View.angMomArrow, system.angularMomentum, false, arrowScale)
-    setArrow(View.omegaArrow, system.omega, !normalizedArrows, Lscale)
+    setArrow(View.omegaArrow, system.omega, !normalizedArrows, omegaScale)
     View.angMomArrow.visible = showJ && View.angMomArrow.visible
     View.omegaArrow.visible = showOmega && View.omegaArrow.visible
     setArrow(View.x1Arrow, system.x1)
@@ -869,34 +943,18 @@ function main() {
     View.spinner.setMasses(...system.getMasses())
     system.zeroTime()
     const [m1, m2] = system.getMasses()
-    ellipsoidView.update(
-      state.energy_scale,
-      system.angularMomentum,
-      system.omega,
-      m1,
-      m2
-    )
-    View.ellipsoids.update(
-      state.energy_scale,
-      system.angularMomentum,
-      system.omega,
-      m1,
-      m2
-    )
-    View.rollingEllipsoid.update(
+    const updateArgs = [
       state.energy_scale,
       system.angularMomentum,
       state.omega,
       m1,
-      m2
-    )
-    View.kissingSpheres.update(
-      state.energy_scale,
-      system.angularMomentum,
-      state.omega,
-      m1,
-      m2
-    )
+      m2,
+    ]
+    ellipsoidView.update(...updateArgs)
+    View.ellipsoids.update(...updateArgs)
+    View.rollingEllipsoid.update(...updateArgs)
+    View.rollingMomentumEllipsoid.update(...updateArgs)
+    View.kissingSpheres.update(...updateArgs)
   }
 
   const update = (e) => {
@@ -972,11 +1030,15 @@ function main() {
 
     View.ellipsoids.group.visible = state.showEllipsoids
     View.rollingEllipsoid.group.visible = state.showRollingEllipsoid
+    View.omegaPlane.visible = state.showOmegaPlane
+    View.rollingMomentumEllipsoid.group.visible =
+      state.showRollingMomentumEllipsoid
     View.kissingSpheres.group.visible = state.showKissingSpheres
     state.angularMomentum = system.angularMomentum.length()
   }
 
   const { rootGui } = makeGui(update)
+  gc(Object.values(View))
   gc(rootGui)
   animate()
   gc(pendulumView)
@@ -987,8 +1049,6 @@ function main() {
       window.removeEventListener('resize', onWindowResize)
       renderer.dispose()
       controls.dispose()
-      View.composer.dispose()
-      View.scene.dispose()
     },
   })
 }

@@ -60,9 +60,16 @@ export function createKissingSpheres(resolution = 128) {
     group.scale.set(scale, scale, scale)
   }
 
+  const setOpacity = (outside, inside) => {
+    outer.material.opacity = outside
+    lower.material.opacity = inside
+    upper.material.opacity = inside
+  }
+
   return {
     group,
     setScale,
+    setOpacity,
     update,
   }
 }

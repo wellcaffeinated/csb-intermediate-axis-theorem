@@ -46,10 +46,71 @@ export function createRollingEllipsoid(resolution = 128) {
     group.scale.set(scale, scale, scale)
   }
 
+  const setOpacity = (o) => {
+    ellipsoid.material.opacity = o
+  }
+
   return {
     ellipsoid,
     group,
     setScale,
+    setOpacity,
+    update,
+  }
+}
+
+export function createRollingMomentumEllipsoid(resolution = 128) {
+  // Create sphere geometry and material
+  const geometry = new THREE.SphereGeometry(1, resolution, resolution)
+  const material = new THREE.MeshStandardMaterial({
+    color: pink,
+    transparent: true,
+    opacity: 0.5,
+    roughness: 0.2,
+    // depthFunc: THREE.AlwaysDepth,
+    side: THREE.DoubleSide,
+  })
+  // Create sphere mesh
+  const ellipsoid = new THREE.Mesh(geometry, material)
+
+  const group = new THREE.Group()
+  group.add(ellipsoid)
+
+  const update = (Escale, L, w, m1, m2) => {
+    const M = m1 + m2
+    const r = m2 / m1
+    const csq = 1 + 1 / r
+    const I1 = m1
+    const I2 = m2
+    const I3 = M
+    // const wx = omega.x
+    // const wy = omega.y
+    // const wz = omega.z
+    // const E = 0.5 * (I1 * wx * wx + I2 * wy * wy + I3 * wz * wz)
+    // Ttil = T / (L^2/I2/2)
+    const Ttilmin = 1 / csq
+    const Ttil = THREE.MathUtils.lerp(Ttilmin, 1, Escale)
+    const conv = M // L.lengthSq()
+    const z = 1 //(conv * Ttil) / 2 / I2
+    const a = z / I1
+    const b = z / I2
+    const c = z / I3
+    ellipsoid.scale.set(a, b, c)
+  }
+
+  const setScale = (scale) => {
+    group.scale.set(scale, scale, scale)
+  }
+
+  const setOpacity = (o) => {
+    ellipsoid.material.opacity = o
+  }
+
+  return {
+    ellipsoid,
+    group,
+    setScale,
+    setOpacity,
     update,
   }
 }
@@ -129,11 +190,18 @@ export function createEllipsoids(resolution = 128) {
     group.scale.set(scale, scale, scale)
   }
 
+  const setOpacity = (energy = 0.7, momentum = 0.7) => {
+    sphere.material.opacity = momentum
+    ellipsoid.material.opacity = energy
+    wf.material.opacity = energy * energy
+  }
+
   return {
     Tobj,
     Lobj,
     group,
     setScale,
+    setOpacity,
     update,
   }
 }
