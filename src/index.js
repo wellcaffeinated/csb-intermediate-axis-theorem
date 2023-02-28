@@ -199,6 +199,7 @@ function init() {
 
   View.rollingEllipsoid = createRollingEllipsoid()
   View.rollingEllipsoid.group.rotation.set(Math.PI / 2, Math.PI / 2, 0)
+  View.rollingEllipsoid.group.renderOrder = 1
 
   const plane = new THREE.Plane(new THREE.Vector3(1, 1, 1), 0)
   const helper = new THREE.PlaneHelper(plane, 1000, 0x000000)
