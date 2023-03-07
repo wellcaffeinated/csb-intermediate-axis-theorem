@@ -195,7 +195,7 @@ function init() {
 
   // ellipsoids
   View.ellipsoids = createEllipsoids(256)
-  View.ellipsoids.group.rotation.set(0, Math.PI / 2, 0)
+  View.ellipsoids.group.rotation.set(0, Math.PI / 2, Math.PI / 2)
 
   View.rollingEllipsoid = createRollingEllipsoid()
   View.rollingEllipsoid.group.rotation.copy(View.ellipsoids.group.rotation)
