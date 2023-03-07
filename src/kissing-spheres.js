@@ -39,10 +39,10 @@ export function createKissingSpheres(resolution = 128) {
 
   const update = (Escale, L, w, m1, m2) => {
     const M = m1 + m2
-    const r = m2 / m1
+    const r = m1 / m2
     const csq = 1 + 1 / r
-    const I1 = m2
-    const I2 = m1
+    const I1 = m1
+    const I2 = m2
     const I3 = M
     const Lmag = L.length()
     const router = 1 / I1 - 1 / I3

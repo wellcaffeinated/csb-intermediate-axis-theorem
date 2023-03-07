@@ -132,15 +132,15 @@ function createSpinner(texture) {
   }
 
   const setMasses = (m1, m2) => {
-    const sx = massSizeScale(m1)
+    const sx = massSizeScale(m2)
     massX1.mesh.scale.set(sx, sx, sx)
     massX2.mesh.scale.set(sx, sx, sx)
 
-    const sy = massSizeScale(m2)
+    const sy = massSizeScale(m1)
     massY1.mesh.scale.set(sy, sy, sy)
     massY2.mesh.scale.set(sy, sy, sy)
-    plate.scale.set(1, m2 / m1, 1)
-    rods.visible = !!m2
+    plate.scale.set(1, m1 / m2, 1)
+    rods.visible = !!m1
   }
 
   const setSingleSided = (toggle) => {
@@ -195,10 +195,10 @@ function init() {
 
   // ellipsoids
   View.ellipsoids = createEllipsoids(256)
-  View.ellipsoids.group.rotation.set(Math.PI / 2, Math.PI / 2, 0)
+  View.ellipsoids.group.rotation.set(0, Math.PI / 2, 0)
 
   View.rollingEllipsoid = createRollingEllipsoid()
-  View.rollingEllipsoid.group.rotation.set(Math.PI / 2, Math.PI / 2, 0)
+  View.rollingEllipsoid.group.rotation.copy(View.ellipsoids.group.rotation)
   View.rollingEllipsoid.group.renderOrder = 1
 
   const plane = new THREE.Plane(new THREE.Vector3(1, 1, 1), 0)
@@ -209,7 +209,7 @@ function init() {
   View.scene.add(helper)
 
   View.rollingMomentumEllipsoid = createRollingMomentumEllipsoid()
-  View.rollingMomentumEllipsoid.group.rotation.set(Math.PI / 2, Math.PI / 2, 0)
+  View.rollingMomentumEllipsoid.group.rotation.copy(View.ellipsoids.group.rotation)
   // spinner
 
   View.spinner = createSpinner()
@@ -262,7 +262,7 @@ function init() {
     throttleDistance: 0.01,
     maxSize: 1000,
     maxDistance: 10,
-    color: red,
+    color: blue,
   })
   View.x1Trail.mesh.scale.set(100, 100, 100)
   View.trailsGroup.add(View.x1Trail.mesh)
@@ -272,7 +272,7 @@ function init() {
     throttleDistance: 0.01,
     maxSize: 1000,
     maxDistance: 10,
-    color: blue,
+    color: red,
   })
   View.x2Trail.mesh.scale.set(100, 100, 100)
   View.trailsGroup.add(View.x2Trail.mesh)
@@ -651,8 +651,8 @@ function makeGui(onChange) {
 
   const setOmegaFromEnergy = () => {
     const M = 4
-    const m1 = M / (state.r + 1)
-    const m2 = state.r * m1
+    const m2 = M / (state.r + 1)
+    const m1 = state.r * m2
     const csq = 1 + 1 / state.r
     // const Ttil = state.energy_scale //
     const Ttilmin = 1 / csq
@@ -861,10 +861,10 @@ function main() {
 
   const FUDGE = new THREE.Vector3(1, 1, 1).normalize()
   const getPendulumAngle = (x1, x2, L) => {
-    const alpha = tmpV.copy(L).lerp(FUDGE, 1e-6).cross(x2).angleTo(x1)
+    const alpha = tmpV.copy(L).lerp(FUDGE, 1e-6).cross(x1).angleTo(x2)
     const sign = alpha > Math.PI / 2 ? 1 : -1
-    tmpV.copy(L).lerp(FUDGE, 1e-6).projectOnPlane(x1)
-    return 2 * sign * tmpV.angleTo(x2) - Math.PI / 2
+    tmpV.copy(L).lerp(FUDGE, 1e-6).projectOnPlane(x2)
+    return 2 * sign * tmpV.angleTo(x1) - Math.PI / 2
   }
 
   let showOmega = true
