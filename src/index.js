@@ -79,8 +79,8 @@ function createSpinner(texture) {
   const group = new THREE.Group()
   const props = { roughness: 0.7, metalness: 0.5 }
 
-  const massRed1 = createMass({ x: 0, y: 0, z: 100 }, props, red)
-  const massRed2 = createMass({ x: 0, y: 0, z: -100 }, props, red)
+  const massRed1 = createMass({ x: 100, y: 0, z: 0 }, props, red)
+  const massRed2 = createMass({ x: -100, y: 0, z: 0 }, props, red)
   const massBlue1 = createMass({ x: 0, y: 100, z: 0 }, props, blue)
   const massBlue2 = createMass({ x: 0, y: -100, z: 0 }, props, blue)
 
@@ -102,7 +102,7 @@ function createSpinner(texture) {
   const plate = new THREE.Mesh(geometry, material)
   plate.castShadow = true
   plate.receiveShadow = true
-  plate.rotation.set(0, Math.PI / 2, 0)
+  plate.rotation.set(0, 0, 0)
   group.add(plate)
 
   const cyl = new THREE.CylinderGeometry(0.5, 0.5, 100, 32)
@@ -195,7 +195,7 @@ function init() {
 
   // ellipsoids
   View.ellipsoids = createEllipsoids(256)
-  View.ellipsoids.group.rotation.set(0, Math.PI / 2, 0)
+  View.ellipsoids.group.rotation.set(0, 0, 0)
 
   View.rollingEllipsoid = createRollingEllipsoid()
   View.rollingEllipsoid.group.rotation.copy(View.ellipsoids.group.rotation)
@@ -598,7 +598,7 @@ function makeGui(onChange) {
   const deg = Math.PI / 180
 
   const state = {
-    psi: 90,
+    psi: 0,
     chi: 0,
     r: 0.5,
     w_x: 1e-6,
@@ -607,7 +607,7 @@ function makeGui(onChange) {
     get omega() {
       const omega = new Vector3(state.w_x, state.w_y, state.w_z)
       omega.applyAxisAngle(Xaxis, state.chi * deg)
-      omega.applyAxisAngle(Yaxis, (state.psi - 90) * deg)
+      omega.applyAxisAngle(Yaxis, -state.psi * deg)
       return omega
     },
     L: 0.013,
@@ -663,8 +663,8 @@ function makeGui(onChange) {
     const h = (2 * state.r * lambda) / I1
     const w1sq = h * csq * (Ttil - Ttilmin)
     const w3sq = (h / csq) * (1 - Ttil)
-    state.w_x = 0
-    state.w_y = Math.sqrt(w1sq)
+    state.w_x = Math.sqrt(w1sq)
+    state.w_y = 0
     state.w_z = Math.sqrt(w3sq)
   }
 

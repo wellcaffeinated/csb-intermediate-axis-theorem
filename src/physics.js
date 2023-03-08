@@ -14,10 +14,10 @@ export const createSystem = (options) => {
   let m1 = 2
   let m2 = 2
   let m3 = 0
-  const X1AXIS = new THREE.Vector3(0, 0, 1)
+  const X1AXIS = new THREE.Vector3(1, 0, 0)
   const X2AXIS = new THREE.Vector3(0, 1, 0)
-  const X3AXIS = new THREE.Vector3(1, 0, 0)
-  const UP = new THREE.Vector3(0, 1, 0)
+  const X3AXIS = new THREE.Vector3(0, 0, 1)
+  const UP = new THREE.Vector3(0, 0, 1)
   // x1 and x2 will be unit vectors
   const x1 = new THREE.Vector3().copy(X1AXIS)
   const x2 = new THREE.Vector3().copy(X2AXIS)
@@ -92,11 +92,11 @@ export const createSystem = (options) => {
     chi *= Math.PI / 180
     // x1vec = vector(R*sin(psi),0,R*cos(psi))
     // x2vec = vector(-R*sin(chi)*cos(psi),R*cos(chi),R*sin(chi)*sin(psi))
-    x2.set(Math.sin(psi), 0, Math.cos(psi))
-    x1.set(
-      -Math.sin(chi) * Math.cos(psi),
+    x1.set(Math.cos(psi), 0, Math.sin(psi))
+    x2.set(
+      - Math.sin(chi) * Math.sin(psi),
       Math.cos(chi),
-      Math.sin(chi) * Math.sin(psi)
+      Math.sin(chi) * Math.cos(psi)
     )
     updateRot()
     x3.copy(X3AXIS).applyQuaternion(qRot)
