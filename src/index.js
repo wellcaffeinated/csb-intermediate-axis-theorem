@@ -83,12 +83,14 @@ function createSpinner(texture) {
   const massRed2 = createMass({ x: -100, y: 0, z: 0 }, props, red)
   const massBlue1 = createMass({ x: 0, y: 100, z: 0 }, props, blue)
   const massBlue2 = createMass({ x: 0, y: -100, z: 0 }, props, blue)
+  const massGrey1 = createMass({ x: 0, y: 0, z: 100 }, props, grey)
+  const massGrey2 = createMass({ x: 0, y: 0, z: -100 }, props, grey)
 
-  const masses = [massRed1, massRed2, massBlue1, massBlue2]
+  const masses = [massRed1, massRed2, massBlue1, massBlue2, massGrey1, massGrey2]
 
   group.add(...masses.map((m) => m.mesh))
 
-  const geometry = new THREE.BoxGeometry(200, 200, 4)
+  const geometry = new THREE.BoxGeometry(200, 200, 200)
   const material = new THREE.MeshStandardMaterial({
     // bumpScale: 1,
     color: white,
@@ -116,9 +118,24 @@ function createSpinner(texture) {
   rod2.receiveShadow = true
   rod2.rotation.set(0, 0, 0)
   rod2.position.set(0, -50, 0)
-  const rods = new THREE.Group()
-  rods.add(rod1, rod2)
-  group.add(rods)
+  const rodsBlue = new THREE.Group()
+  rodsBlue.add(rod1, rod2)
+  group.add(rodsBlue)
+
+  const rodg1 = new THREE.Mesh(cyl, material)
+  rodg1.castShadow = true
+  rodg1.receiveShadow = true
+  rodg1.rotation.set(0, 0, 0)
+  rodg1.position.set(0, 50, 0)
+  const rodg2 = new THREE.Mesh(cyl, material)
+  rodg2.castShadow = true
+  rodg2.receiveShadow = true
+  rodg2.rotation.set(0, 0, 0)
+  rodg2.position.set(0, -50, 0)
+  const rodsGrey = new THREE.Group()
+  rodsGrey.rotation.set(Math.PI / 2, 0, 0)
+  rodsGrey.add(rodg1, rodg2)
+  group.add(rodsGrey)
 
   // const axesHelper = new THREE.AxesHelper(500)
   // group.add(axesHelper)
@@ -131,7 +148,7 @@ function createSpinner(texture) {
     group.rotation.setFromQuaternion(quaternion)
   }
 
-  const setMasses = (m1, m2) => {
+  const setMasses = (m1, m2, m3) => {
     const sx = massSizeScale(m1)
     massRed1.mesh.scale.set(sx, sx, sx)
     massRed2.mesh.scale.set(sx, sx, sx)
@@ -139,8 +156,13 @@ function createSpinner(texture) {
     const sy = massSizeScale(m2)
     massBlue1.mesh.scale.set(sy, sy, sy)
     massBlue2.mesh.scale.set(sy, sy, sy)
-    plate.scale.set(1, m2 / m1, 1)
-    rods.visible = !!m1
+
+    const sz = massSizeScale(m3)
+    massGrey1.mesh.scale.set(sz, sz, sz)
+    massGrey2.mesh.scale.set(sz, sz, sz)
+
+    plate.scale.set(1, m2 / m1, m3 / m1 + 1 / 50)
+    rodsGrey.visible = !!m3
   }
 
   const setSingleSided = (toggle) => {
@@ -601,6 +623,7 @@ function makeGui(onChange) {
     psi: 0,
     chi: 0,
     r: 0.5,
+    q: 0,
     w_x: 1e-6,
     w_y: 0,
     w_z: 0.005,
@@ -675,21 +698,31 @@ function makeGui(onChange) {
 
   const initialConditions = gui.addFolder('Initial Conditions')
 
-  const setMinEscale = () => {
+  let rCtrl
+  let qCtrl
+  const onMassRatioUpdate = () => {
     // const c = Math.sqrt(1 + state.r)
     // const Ttilmin = 1 / c / c
     // escalectrl.min(Ttilmin)
     // escalectrl.setValue(Math.max(state.energy_scale, Ttilmin))
+    rCtrl.min(Math.max(state.q, 0.02))
+    qCtrl.max(state.r)
+    rCtrl.updateDisplay()
+    qCtrl.updateDisplay()
     setOmegaFromEnergy()
   }
 
   initialConditions.add(state, 'psi', 0, 180, 1)
   initialConditions.add(state, 'chi', 0, 180, 1)
   initialConditions.add(state, 'L', 0, 0.03, 0.001).name('L')
-  initialConditions
+  rCtrl = initialConditions
     .add(state, 'r', 0.02, 1, 0.01)
-    .name('mass ratio')
-    .onChange(setMinEscale)
+    .name('mass ratio m2/m1')
+    .onChange(onMassRatioUpdate)
+  qCtrl = initialConditions
+    .add(state, 'q', 0, state.r, 0.01)
+    .name('mass ratio m3/m1')
+    .onChange(onMassRatioUpdate)
   const escalectrl = initialConditions
     .add(state, 'energy_scale', 0, 1, 0.001)
     .name('energy amount')
@@ -704,7 +737,7 @@ function makeGui(onChange) {
       'fn'
     )
     .name('Set to instability')
-  setMinEscale()
+  onMassRatioUpdate()
 
   const omega = gui.addFolder('Angular Velocity').close()
   omega.add(state, 'w_x', -0.02, 0.02, 1e-6).listen()
@@ -928,6 +961,7 @@ function main() {
 
   const triggersRefresh = [
     'r',
+    'q',
     'psi',
     'chi',
     'w_x',
@@ -938,7 +972,7 @@ function main() {
   ]
 
   const restart = (state) => {
-    system.setMassRatio(state.r)
+    system.setMassRatio(state.r, state.q)
     system.setInitialPosition(state.psi, state.chi)
     system.setOmega(state.omega)
     View.spinner.setMasses(...system.getMasses())

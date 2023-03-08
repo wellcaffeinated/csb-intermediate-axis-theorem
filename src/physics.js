@@ -68,10 +68,11 @@ export const createSystem = (options) => {
     omega.add(tmpV2)
   }
 
-  const setMassRatio = (r = 1) => {
+  const setMassRatio = (r = 1, q = 0) => {
     massRatio = r
-    m2 = r * totalMass / (1 + r)
-    m1 = totalMass / (1 + r)
+    m1 = totalMass / (1 + r + q)
+    m2 = r * m1
+    m3 = q * m1
     updateAngMom()
   }
 
