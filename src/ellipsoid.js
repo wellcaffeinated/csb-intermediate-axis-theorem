@@ -21,24 +21,14 @@ export function createRollingEllipsoid(resolution = 128) {
   const group = new THREE.Group()
   group.add(ellipsoid)
 
-  const update = (Escale, L, w, m1, m2) => {
-    const M = m1 + m2
-    const r = m1 / m2
-    const csq = 1 + 1 / r
-    const I1 = m2
-    const I2 = m1
-    const I3 = M
-    // const wx = omega.x
-    // const wy = omega.y
-    // const wz = omega.z
-    // const E = 0.5 * (I1 * wx * wx + I2 * wy * wy + I3 * wz * wz)
-    const Ttilmin = 1 / csq
-    const Ttil = THREE.MathUtils.lerp(Ttilmin, 1, Escale)
-    const conv = M //L.lengthSq() / w.lengthSq()
-    const z = (conv * Ttil) / 2 / I2
-    const a = Math.sqrt((2 * z) / I1)
-    const b = Math.sqrt((2 * z) / I2)
-    const c = Math.sqrt((2 * z) / I3)
+  const update = (system) => {
+    const { I1, I2, I3 } = system
+    const T = system.energy
+    const Lsq = system.angularMomentum.lengthSq()
+    const z = I3 * T / Lsq
+    const a = Math.sqrt(z / I1)
+    const b = Math.sqrt(z / I2)
+    const c = Math.sqrt(z / I3)
     ellipsoid.scale.set(a, b, c)
   }
 
@@ -76,22 +66,9 @@ export function createRollingMomentumEllipsoid(resolution = 128) {
   const group = new THREE.Group()
   group.add(ellipsoid)
 
-  const update = (Escale, L, w, m1, m2) => {
-    const M = m1 + m2
-    const r = m1 / m2
-    const csq = 1 + 1 / r
-    const I1 = m2
-    const I2 = m1
-    const I3 = M
-    // const wx = omega.x
-    // const wy = omega.y
-    // const wz = omega.z
-    // const E = 0.5 * (I1 * wx * wx + I2 * wy * wy + I3 * wz * wz)
-    // Ttil = T / (L^2/I2/2)
-    const Ttilmin = 1 / csq
-    const Ttil = THREE.MathUtils.lerp(Ttilmin, 1, Escale)
-    const conv = M // L.lengthSq()
-    const z = 2 //(conv * Ttil) / 2 / I2
+  const update = (system) => {
+    const { I1, I2, I3 } = system
+    const z = 2
     const a = z / I1
     const b = z / I2
     const c = z / I3
@@ -166,23 +143,14 @@ export function createEllipsoids(resolution = 128) {
   const group = new THREE.Group()
   group.add(Tobj, Lobj)
 
-  const update = (Escale, L, w, m1, m2) => {
-    const M = m1 + m2
-    const r = m1 / m2
-    const csq = 1 + 1 / r
-    const I1 = m2
-    const I2 = m1
-    const I3 = M
-    // const wx = omega.x
-    // const wy = omega.y
-    // const wz = omega.z
-    // const E = 0.5 * (I1 * wx * wx + I2 * wy * wy + I3 * wz * wz)
-    const Ttilmin = 1 / csq
-    const Ttil = THREE.MathUtils.lerp(Ttilmin, 1, Escale)
-    const z = Ttil / 2 / I2
-    const a = Math.sqrt(2 * z * I1)
-    const b = Math.sqrt(2 * z * I2)
-    const c = Math.sqrt(2 * z * I3)
+  const update = (system) => {
+    const { I1, I2, I3 } = system
+    const T = system.energy
+    const Lsq = system.angularMomentum.lengthSq()
+    const z = T / Lsq
+    const a = Math.sqrt(z * I1)
+    const b = Math.sqrt(z * I2)
+    const c = Math.sqrt(z * I3)
     Tobj.scale.set(a, b, c)
   }
 
@@ -227,11 +195,11 @@ export function createEllipsoidView(el) {
   )
 
   const { update, group } = createEllipsoids()
-  group.rotation.set(0, 0, 0)
+  group.rotation.set(0, Math.PI / 2, 0)
   scene.add(group)
 
   // Set camera position
-  camera.position.set(20, 0, 0)
+  camera.position.set(0, 20, 0)
 
   // Add OrbitControls
   const controls = new OrbitControls(camera, renderer.domElement)

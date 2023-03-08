@@ -79,12 +79,12 @@ function createSpinner(texture) {
   const group = new THREE.Group()
   const props = { roughness: 0.7, metalness: 0.5 }
 
-  const massX1 = createMass({ x: 0, y: 0, z: 100 }, props, red)
-  const massX2 = createMass({ x: 0, y: 0, z: -100 }, props, red)
-  const massY1 = createMass({ x: 0, y: 100, z: 0 }, props, blue)
-  const massY2 = createMass({ x: 0, y: -100, z: 0 }, props, blue)
+  const massRed1 = createMass({ x: 0, y: 0, z: 100 }, props, red)
+  const massRed2 = createMass({ x: 0, y: 0, z: -100 }, props, red)
+  const massBlue1 = createMass({ x: 0, y: 100, z: 0 }, props, blue)
+  const massBlue2 = createMass({ x: 0, y: -100, z: 0 }, props, blue)
 
-  const masses = [massX1, massX2, massY1, massY2]
+  const masses = [massRed1, massRed2, massBlue1, massBlue2]
 
   group.add(...masses.map((m) => m.mesh))
 
@@ -132,20 +132,20 @@ function createSpinner(texture) {
   }
 
   const setMasses = (m1, m2) => {
-    const sx = massSizeScale(m2)
-    massX1.mesh.scale.set(sx, sx, sx)
-    massX2.mesh.scale.set(sx, sx, sx)
+    const sx = massSizeScale(m1)
+    massRed1.mesh.scale.set(sx, sx, sx)
+    massRed2.mesh.scale.set(sx, sx, sx)
 
-    const sy = massSizeScale(m1)
-    massY1.mesh.scale.set(sy, sy, sy)
-    massY2.mesh.scale.set(sy, sy, sy)
-    plate.scale.set(1, m1 / m2, 1)
+    const sy = massSizeScale(m2)
+    massBlue1.mesh.scale.set(sy, sy, sy)
+    massBlue2.mesh.scale.set(sy, sy, sy)
+    plate.scale.set(1, m2 / m1, 1)
     rods.visible = !!m1
   }
 
   const setSingleSided = (toggle) => {
-    massX2.mesh.visible = !toggle
-    massY2.mesh.visible = !toggle
+    massRed2.mesh.visible = !toggle
+    massBlue2.mesh.visible = !toggle
     rod2.visible = !toggle
   }
 
@@ -195,7 +195,7 @@ function init() {
 
   // ellipsoids
   View.ellipsoids = createEllipsoids(256)
-  View.ellipsoids.group.rotation.set(0, Math.PI / 2, Math.PI / 2)
+  View.ellipsoids.group.rotation.set(0, Math.PI / 2, 0)
 
   View.rollingEllipsoid = createRollingEllipsoid()
   View.rollingEllipsoid.group.rotation.copy(View.ellipsoids.group.rotation)
@@ -262,7 +262,7 @@ function init() {
     throttleDistance: 0.01,
     maxSize: 1000,
     maxDistance: 10,
-    color: blue,
+    color: red,
   })
   View.x1Trail.mesh.scale.set(100, 100, 100)
   View.trailsGroup.add(View.x1Trail.mesh)
@@ -272,7 +272,7 @@ function init() {
     throttleDistance: 0.01,
     maxSize: 1000,
     maxDistance: 10,
-    color: red,
+    color: blue,
   })
   View.x2Trail.mesh.scale.set(100, 100, 100)
   View.trailsGroup.add(View.x2Trail.mesh)
@@ -613,7 +613,7 @@ function makeGui(onChange) {
     L: 0.013,
     energy_scale: 1,
     frame: frameChoices[0],
-    showXVecs: false,
+    showXVecs: true,
     showAxes: true,
     showBg: true,
     singleSidedMasses: false,
@@ -651,8 +651,8 @@ function makeGui(onChange) {
 
   const setOmegaFromEnergy = () => {
     const M = 4
-    const m2 = M / (state.r + 1)
-    const m1 = state.r * m2
+    const m1 = M / (state.r + 1)
+    const m2 = state.r * m1
     const csq = 1 + 1 / state.r
     // const Ttil = state.energy_scale //
     const Ttilmin = 1 / csq
@@ -663,8 +663,8 @@ function makeGui(onChange) {
     const h = (2 * state.r * lambda) / I1
     const w1sq = h * csq * (Ttil - Ttilmin)
     const w3sq = (h / csq) * (1 - Ttil)
-    state.w_x = Math.sqrt(w1sq)
-    state.w_y = 0
+    state.w_x = 0
+    state.w_y = Math.sqrt(w1sq)
     state.w_z = Math.sqrt(w3sq)
   }
 
@@ -861,10 +861,10 @@ function main() {
 
   const FUDGE = new THREE.Vector3(1, 1, 1).normalize()
   const getPendulumAngle = (x1, x2, L) => {
-    const alpha = tmpV.copy(L).lerp(FUDGE, 1e-6).cross(x1).angleTo(x2)
+    const alpha = tmpV.copy(L).lerp(FUDGE, 1e-6).cross(x2).angleTo(x1)
     const sign = alpha > Math.PI / 2 ? 1 : -1
-    tmpV.copy(L).lerp(FUDGE, 1e-6).projectOnPlane(x2)
-    return 2 * sign * tmpV.angleTo(x1) - Math.PI / 2
+    tmpV.copy(L).lerp(FUDGE, 1e-6).projectOnPlane(x1)
+    return 2 * sign * tmpV.angleTo(x2) - Math.PI / 2
   }
 
   let showOmega = true
@@ -943,19 +943,11 @@ function main() {
     system.setOmega(state.omega)
     View.spinner.setMasses(...system.getMasses())
     system.zeroTime()
-    const [m1, m2] = system.getMasses()
-    const updateArgs = [
-      state.energy_scale,
-      system.angularMomentum,
-      state.omega,
-      m1,
-      m2,
-    ]
-    ellipsoidView.update(...updateArgs)
-    View.ellipsoids.update(...updateArgs)
-    View.rollingEllipsoid.update(...updateArgs)
-    View.rollingMomentumEllipsoid.update(...updateArgs)
-    View.kissingSpheres.update(...updateArgs)
+    ellipsoidView.update(system)
+    View.ellipsoids.update(system)
+    View.rollingEllipsoid.update(system)
+    View.rollingMomentumEllipsoid.update(system)
+    View.kissingSpheres.update(system)
   }
 
   const update = (e) => {
